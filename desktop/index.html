@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Meeting Copilot</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="desktop-shell">
+      <aside class="nav">
+        <div>
+          <p class="eyebrow">Live Meeting Copilot</p>
+          <h1>Meeting command center</h1>
+        </div>
+
+        <nav aria-label="Primary">
+          <button class="nav-item active" data-section="calendar">Calendar/Home</button>
+          <button class="nav-item" data-section="live">Live Mode</button>
+          <button class="nav-item" data-section="minutes">Minutes Mode</button>
+          <button class="nav-item" data-section="privacy">Settings/Privacy</button>
+        </nav>
+
+        <div class="runtime-card">
+          <span class="status-dot"></span>
+          <div>
+            <strong>Desktop shell</strong>
+            <p id="runtimeVersion">Electron runtime ready</p>
+          </div>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Local-first private app</p>
+            <h2 id="sectionTitle">Calendar/Home</h2>
+          </div>
+          <div class="meeting-type" role="group" aria-label="Meeting type">
+            <button class="type-toggle active" data-meeting-type="founder-customer">Founder/customer</button>
+            <button class="type-toggle" data-meeting-type="candidate-prep">Candidate prep</button>
+          </div>
+        </header>
+
+        <section id="calendar" class="section active" aria-labelledby="sectionTitle">
+          <div class="section-grid">
+            <article class="panel wide">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Next meeting</p>
+                  <h3 id="meetingTitle">Customer discovery with Northstar CFO</h3>
+                </div>
+                <span id="platformBadge" class="badge">Zoom</span>
+              </div>
+              <p id="meetingSummary" class="lead">A founder/customer call focused on rollout risk, pricing, and follow-up decisions.</p>
+              <dl id="meetingMeta" class="meta-list"></dl>
+              <button id="startAssistBtn" class="primary">Start Live Assist</button>
+            </article>
+
+            <article class="panel">
+              <p class="eyebrow">Capture policy</p>
+              <h3>User-confirmed capture only</h3>
+              <p>Calendar detection can highlight the likely call, but capture starts only after the user clicks Start Live Assist.</p>
+            </article>
+
+            <article class="panel">
+              <p class="eyebrow">Local storage</p>
+              <h3>Private by default</h3>
+              <p>Meetings, transcript events, minutes, settings, and demo data live locally before any explicit export.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="live" class="section" aria-labelledby="sectionTitle">
+          <div class="live-layout">
+            <article class="panel transcript-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Live Mode</p>
+                  <h3>Named transcript</h3>
+                </div>
+                <span id="captureStatus" class="badge">Idle</span>
+              </div>
+              <div id="transcriptTimeline" class="timeline"></div>
+            </article>
+
+            <article class="panel assist-panel">
+              <p class="eyebrow">Answer assist</p>
+              <h3 id="assistPromptTitle">Grounded answer suggestion</h3>
+              <p id="latestQuestion" class="question"></p>
+              <button class="primary">What should I answer?</button>
+              <div id="suggestedAnswer" class="answer-preview"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="minutes" class="section" aria-labelledby="sectionTitle">
+          <article class="panel minutes-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Minutes Mode</p>
+                <h3>Draft minutes</h3>
+              </div>
+              <span class="badge">Editable draft</span>
+            </div>
+            <div id="minutesContent" class="minutes-content"></div>
+          </article>
+        </section>
+
+        <section id="privacy" class="section" aria-labelledby="sectionTitle">
+          <div class="section-grid">
+            <article class="panel">
+              <p class="eyebrow">Audio retention policy</p>
+              <h3>Delete after processing</h3>
+              <p>Audio is fallback data and should be deleted by default unless a meeting explicitly opts in to keeping it.</p>
+            </article>
+            <article class="panel">
+              <p class="eyebrow">Evaluated interview boundary</p>
+              <h3>No stealth assistance</h3>
+              <p>Candidate workflows support prep, mock interviews, truthful recall, and disclosed or permitted coding help.</p>
+            </article>
+            <article class="panel">
+              <p class="eyebrow">External AI</p>
+              <h3>Optional only</h3>
+              <p>AI calls happen only when configured; the local shell and event contracts work without an API key.</p>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./renderer.js" type="module"></script>
+  </body>
+</html>

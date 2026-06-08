@@ -12,11 +12,23 @@ See [docs/PRD_ARCHITECTURE.md](docs/PRD_ARCHITECTURE.md).
 
 Rebuild decision: start with an Electron desktop shell before Chrome extension capture. See [docs/adr/0001-electron-shell-first.md](docs/adr/0001-electron-shell-first.md).
 
-## Run
+## Run The Electron Desktop Shell
 
 ```bash
 cd /Users/henry/local-meeting-copilot
+npm install
 npm start
+```
+
+V1 starts with an Electron desktop shell because the desktop app is the main product surface for Calendar/Home, Live Mode, Minutes Mode, Settings/Privacy, local storage, AI orchestration, and the future capture bridge. The Chrome extension needs this receiving app and shared event contract before browser capture events have somewhere useful to go.
+
+## Run The Prototype-Only Localhost App
+
+The original localhost browser app is still available as a prototype for microphone/screen recording, browser speech recognition, answer suggestions, and minutes generation.
+
+```bash
+cd /Users/henry/local-meeting-copilot
+npm run prototype
 ```
 
 Open `http://localhost:5174`.
@@ -24,7 +36,7 @@ Open `http://localhost:5174`.
 If another copy is already running on that port:
 
 ```bash
-PORT=5175 npm start
+PORT=5175 npm run prototype
 ```
 
 ## Optional AI setup
@@ -43,6 +55,9 @@ OPENAI_MODEL=gpt-5.4-mini OPENAI_TRANSCRIBE_MODEL=gpt-4o-transcribe-diarize npm 
 
 ## Features
 
+- Electron desktop shell with placeholder navigation for Calendar/Home, Live Mode, Minutes Mode, and Settings/Privacy.
+- Shared event contracts for meetings, participants, transcript events, answer suggestions, and meeting minutes.
+- Demo meeting type toggle for founder/customer calls and candidate prep/mock interviews.
 - Record microphone audio or screen audio.
 - Live browser transcription where supported.
 - Name meeting participants and tag the live transcript with the current speaker.

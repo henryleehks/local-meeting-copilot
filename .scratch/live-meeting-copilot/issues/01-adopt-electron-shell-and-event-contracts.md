@@ -14,14 +14,16 @@ Decision: start the rebuild with an Electron shell, not the Chrome extension. Th
 
 ## Acceptance criteria
 
-- [ ] The app can launch as an Electron desktop shell in local development.
-- [ ] The shell has placeholder navigation for Calendar/Home, Live Mode, Minutes Mode, and Settings/Privacy.
-- [ ] Shared event contract types exist for Meeting, Participant, Transcript Event, Answer Suggestion, and Meeting Minutes.
-- [ ] The README explains that Electron is the selected V1 desktop runtime and why.
-- [ ] The old localhost prototype remains available or clearly marked as prototype-only.
+- [x] The app can launch as an Electron desktop shell in local development.
+- [x] The shell has placeholder navigation for Calendar/Home, Live Mode, Minutes Mode, and Settings/Privacy.
+- [x] Shared event contract types exist for Meeting, Participant, Transcript Event, Answer Suggestion, and Meeting Minutes.
+- [x] The README explains that Electron is the selected V1 desktop runtime and why.
+- [x] The old localhost prototype remains available or clearly marked as prototype-only.
 
 ## Blocked by
 
 None - can start immediately
 
 ## Comments
+
+- Implemented Electron shell in `desktop/`, shared contracts in `src/contracts.js`, README runtime notes, and retained the original localhost prototype under `npm run prototype`.
