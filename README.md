@@ -63,6 +63,16 @@ GOOGLE_CLIENT_ID=your_client_id GOOGLE_CLIENT_SECRET=your_client_secret npm star
 
 Without these variables, the desktop app still runs with local seed meetings.
 
+## Optional Microsoft Calendar Setup
+
+Microsoft Calendar import uses the Microsoft identity platform authorization code flow with PKCE and Microsoft Graph Calendar APIs.
+
+```bash
+MICROSOFT_CLIENT_ID=your_client_id npm start
+```
+
+`MICROSOFT_TENANT_ID` is optional and defaults to `common`. Without `MICROSOFT_CLIENT_ID`, the desktop app still runs with local seed meetings.
+
 ## Features
 
 - Electron desktop shell with placeholder navigation for Calendar/Home, Live Mode, Minutes Mode, and Settings/Privacy.
@@ -71,6 +81,7 @@ Without these variables, the desktop app still runs with local seed meetings.
 - Local IndexedDB persistence for development seed meetings, participants, transcript events, answer suggestions, minutes, and privacy settings.
 - Local capture event bus and simulator for Meet, Zoom, Teams, desktop accessibility, OCR, and audio diarization transcript events.
 - Optional Google Calendar connection that imports current/upcoming Meet, Zoom, and Teams events into local meeting records.
+- Optional Microsoft Calendar connection that imports current/upcoming Teams, Zoom, and Meet events into local meeting records.
 - Record microphone audio or screen audio.
 - Live browser transcription where supported.
 - Name meeting participants and tag the live transcript with the current speaker.

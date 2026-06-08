@@ -6,7 +6,10 @@ import {
 import { captureEventBus } from "./capture-event-bus.js";
 import { createSimulatedCaptureEvent, simulatorSources } from "./capture-simulator.js";
 import { localMeetingStore } from "./storage.js";
-import { normalizeGoogleCalendarEvent } from "../src/calendar-normalizer.js";
+import {
+  normalizeGoogleCalendarEvent,
+  normalizeMicrosoftCalendarEvent
+} from "../src/calendar-normalizer.js";
 
 const sectionTitles = {
   calendar: "Calendar/Home",
@@ -38,6 +41,12 @@ const els = {
   googleSyncBtn: document.querySelector("#googleSyncBtn"),
   googleDisconnectBtn: document.querySelector("#googleDisconnectBtn"),
   googleEventsList: document.querySelector("#googleEventsList"),
+  microsoftStatus: document.querySelector("#microsoftStatus"),
+  microsoftHelpText: document.querySelector("#microsoftHelpText"),
+  microsoftConnectBtn: document.querySelector("#microsoftConnectBtn"),
+  microsoftSyncBtn: document.querySelector("#microsoftSyncBtn"),
+  microsoftDisconnectBtn: document.querySelector("#microsoftDisconnectBtn"),
+  microsoftEventsList: document.querySelector("#microsoftEventsList"),
   captureStatus: document.querySelector("#captureStatus"),
   liveMeetingTitle: document.querySelector("#liveMeetingTitle"),
   livePlatformLabel: document.querySelector("#livePlatformLabel"),
@@ -225,6 +234,40 @@ function setGoogleStatus(text, detail = "") {
   if (detail) els.googleHelpText.textContent = detail;
 }
 
+function setMicrosoftStatus(text, detail = "") {
+  els.microsoftStatus.textContent = text;
+  if (detail) els.microsoftHelpText.textContent = detail;
+}
+
+const calendarProviders = {
+  google: {
+    api: () => window.desktopApp?.googleCalendar,
+    name: "Google Calendar",
+    setStatus: setGoogleStatus,
+    connectBtn: els.googleConnectBtn,
+    syncBtn: els.googleSyncBtn,
+    disconnectBtn: els.googleDisconnectBtn,
+    list: els.googleEventsList,
+    normalize: normalizeGoogleCalendarEvent,
+    notConfigured: "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, then restart the desktop app.",
+    ready: "Connect Google Calendar to read current and upcoming external calls.",
+    connected: "Sync reads current and upcoming Google Calendar events, then stores normalized meetings locally."
+  },
+  microsoft: {
+    api: () => window.desktopApp?.microsoftCalendar,
+    name: "Microsoft Calendar",
+    setStatus: setMicrosoftStatus,
+    connectBtn: els.microsoftConnectBtn,
+    syncBtn: els.microsoftSyncBtn,
+    disconnectBtn: els.microsoftDisconnectBtn,
+    list: els.microsoftEventsList,
+    normalize: normalizeMicrosoftCalendarEvent,
+    notConfigured: "Set MICROSOFT_CLIENT_ID, then restart the desktop app.",
+    ready: "Connect Microsoft Calendar to read Outlook and Teams meetings.",
+    connected: "Sync reads current and upcoming Microsoft Calendar events, then stores normalized meetings locally."
+  }
+};
+
 function setSection(section) {
   state.activeSection = section;
   els.sectionTitle.textContent = sectionTitles[section];
@@ -250,30 +293,31 @@ els.startAssistBtn.addEventListener("click", () => {
   setSection("live");
 });
 
-async function refreshGoogleStatus() {
-  if (!window.desktopApp?.googleCalendar) {
-    setGoogleStatus("Unavailable", "Google Calendar IPC is unavailable in this runtime.");
+async function refreshCalendarStatus(provider) {
+  const api = provider.api();
+  if (!api) {
+    provider.setStatus("Unavailable", `${provider.name} IPC is unavailable in this runtime.`);
     return;
   }
 
-  const status = await window.desktopApp.googleCalendar.status();
-  els.googleConnectBtn.disabled = !status.configured || status.connected;
-  els.googleSyncBtn.disabled = !status.connected;
-  els.googleDisconnectBtn.disabled = !status.connected;
+  const status = await api.status();
+  provider.connectBtn.disabled = !status.configured || status.connected;
+  provider.syncBtn.disabled = !status.connected;
+  provider.disconnectBtn.disabled = !status.connected;
 
   if (!status.configured) {
-    setGoogleStatus("Not configured", "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, then restart the desktop app.");
+    provider.setStatus("Not configured", provider.notConfigured);
   } else if (status.connected) {
-    setGoogleStatus("Connected", "Sync reads current and upcoming Google Calendar events, then stores normalized meetings locally.");
+    provider.setStatus("Connected", provider.connected);
   } else {
-    setGoogleStatus("Ready", "Connect Google Calendar to read current and upcoming external calls.");
+    provider.setStatus("Ready", provider.ready);
   }
 }
 
-function renderGoogleEvents(meetings) {
-  els.googleEventsList.textContent = "";
+function renderCalendarEvents(provider, meetings) {
+  provider.list.textContent = "";
   if (!meetings.length) {
-    els.googleEventsList.textContent = "No current or upcoming supported Google Calendar meetings found.";
+    provider.list.textContent = `No current or upcoming supported ${provider.name} meetings found.`;
     return;
   }
 
@@ -287,15 +331,15 @@ function renderGoogleEvents(meetings) {
     `;
     row.querySelector("strong").textContent = meeting.title;
     row.addEventListener("click", () => loadMeetingById(meeting.id).catch(showFatalError));
-    els.googleEventsList.append(row);
+    provider.list.append(row);
   });
 }
 
-async function syncGoogleCalendar() {
-  setGoogleStatus("Syncing", "Reading Google Calendar events...");
-  const events = await window.desktopApp.googleCalendar.fetchUpcomingEvents();
+async function syncCalendar(provider) {
+  provider.setStatus("Syncing", `Reading ${provider.name} events...`);
+  const events = await provider.api().fetchUpcomingEvents();
   const meetings = events
-    .map(normalizeGoogleCalendarEvent)
+    .map(provider.normalize)
     .filter((meeting) => meeting.joinUrl);
 
   const saved = [];
@@ -303,34 +347,36 @@ async function syncGoogleCalendar() {
     saved.push(await localMeetingStore.putMeetingBundle(meeting));
   }
 
-  renderGoogleEvents(saved);
-  setGoogleStatus("Synced", `Imported ${saved.length} Google Calendar meeting${saved.length === 1 ? "" : "s"} locally.`);
+  renderCalendarEvents(provider, saved);
+  provider.setStatus("Synced", `Imported ${saved.length} ${provider.name} meeting${saved.length === 1 ? "" : "s"} locally.`);
   if (saved[0]) await loadMeetingById(saved[0].id);
 }
 
-els.googleConnectBtn.addEventListener("click", async () => {
-  try {
-    setGoogleStatus("Connecting", "Opening Google OAuth in your browser...");
-    await window.desktopApp.googleCalendar.connect();
-    await refreshGoogleStatus();
-    await syncGoogleCalendar();
-  } catch (error) {
-    setGoogleStatus("Connect failed", error.message || "Could not connect Google Calendar.");
-  }
-});
+Object.values(calendarProviders).forEach((provider) => {
+  provider.connectBtn.addEventListener("click", async () => {
+    try {
+      provider.setStatus("Connecting", `Opening ${provider.name} OAuth in your browser...`);
+      await provider.api().connect();
+      await refreshCalendarStatus(provider);
+      await syncCalendar(provider);
+    } catch (error) {
+      provider.setStatus("Connect failed", error.message || `Could not connect ${provider.name}.`);
+    }
+  });
 
-els.googleSyncBtn.addEventListener("click", () => {
-  syncGoogleCalendar().catch((error) => setGoogleStatus("Sync failed", error.message || "Could not sync Google Calendar."));
-});
+  provider.syncBtn.addEventListener("click", () => {
+    syncCalendar(provider).catch((error) => provider.setStatus("Sync failed", error.message || `Could not sync ${provider.name}.`));
+  });
 
-els.googleDisconnectBtn.addEventListener("click", async () => {
-  try {
-    await window.desktopApp.googleCalendar.disconnect();
-    renderGoogleEvents([]);
-    await refreshGoogleStatus();
-  } catch (error) {
-    setGoogleStatus("Disconnect failed", error.message || "Could not disconnect Google Calendar.");
-  }
+  provider.disconnectBtn.addEventListener("click", async () => {
+    try {
+      await provider.api().disconnect();
+      renderCalendarEvents(provider, []);
+      await refreshCalendarStatus(provider);
+    } catch (error) {
+      provider.setStatus("Disconnect failed", error.message || `Could not disconnect ${provider.name}.`);
+    }
+  });
 });
 
 function renderSimulatorControls() {
@@ -376,7 +422,7 @@ async function boot() {
   renderSettings();
   renderSimulatorControls();
   await loadMeeting();
-  await refreshGoogleStatus();
+  await Promise.all(Object.values(calendarProviders).map(refreshCalendarStatus));
 }
 
 boot().catch(showFatalError);

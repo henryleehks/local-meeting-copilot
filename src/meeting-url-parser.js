@@ -42,3 +42,12 @@ export function extractGoogleCalendarMeetingUrl(event) {
     event.description
   );
 }
+
+export function extractMicrosoftCalendarMeetingUrl(event) {
+  return extractMeetingUrl(
+    event.onlineMeeting?.joinUrl,
+    event.location?.displayName,
+    event.bodyPreview,
+    event.body?.content
+  );
+}

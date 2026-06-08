@@ -5,6 +5,7 @@ import {
 import {
   detectMeetingPlatform,
   extractGoogleCalendarMeetingUrl,
+  extractMicrosoftCalendarMeetingUrl,
   platformLabel
 } from "./meeting-url-parser.js";
 
@@ -44,6 +45,53 @@ export function normalizeGoogleCalendarEvent(event) {
     summary: joinUrl
       ? `Google Calendar event with ${platformLabel(platform)} link detected.`
       : "Google Calendar event without a supported meeting link yet.",
+    transcriptEvents: [],
+    answerSuggestion: null,
+    minutes: null
+  };
+}
+
+function microsoftTime(value) {
+  return value?.dateTime ? `${value.dateTime}Z` : "";
+}
+
+function microsoftParticipantRole(attendee) {
+  if (attendee.type === "required" || attendee.type === "optional") return "attendee";
+  return "attendee";
+}
+
+export function normalizeMicrosoftCalendarEvent(event) {
+  const joinUrl = extractMicrosoftCalendarMeetingUrl(event);
+  const platform = detectMeetingPlatform(joinUrl);
+  const attendees = event.attendees || [];
+  const organizer = event.organizer?.emailAddress ? [event.organizer] : [];
+  const participants = [...organizer, ...attendees].map((person, index) => {
+    const emailAddress = person.emailAddress || {};
+    return {
+      id: `microsoft-${event.id}-participant-${index}`,
+      displayName: emailAddress.name || emailAddress.address || `Attendee ${index + 1}`,
+      email: emailAddress.address,
+      calendarSource: "microsoft",
+      role: index === 0 && organizer.length ? "attendee" : microsoftParticipantRole(person)
+    };
+  });
+
+  return {
+    id: `microsoft-${event.id}`,
+    title: event.subject || "Untitled Microsoft Calendar event",
+    meetingType: MeetingTypes.founderCustomer,
+    platform,
+    platformLabel: platformLabel(platform),
+    calendarEventId: event.id,
+    joinUrl,
+    startTime: microsoftTime(event.start),
+    endTime: microsoftTime(event.end),
+    participants,
+    capturePolicy: "manual-start-only",
+    audioRetentionPolicy: AudioRetentionPolicies.deleteAfterProcessing,
+    summary: joinUrl
+      ? `Microsoft Calendar event with ${platformLabel(platform)} link detected.`
+      : "Microsoft Calendar event without a supported meeting link yet.",
     transcriptEvents: [],
     answerSuggestion: null,
     minutes: null
