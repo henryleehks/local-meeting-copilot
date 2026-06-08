@@ -12,11 +12,11 @@ Add desktop caption/speaker capture for Zoom, Teams, and Meet windows using acce
 
 ## Acceptance criteria
 
-- [ ] Accessibility capture can emit transcript events when caption/speaker text is exposed by the desktop app.
-- [ ] OCR fallback can read visible captions or speaker labels from the selected meeting window.
-- [ ] Events use source `desktop-accessibility` or `desktop-ocr`.
-- [ ] Speaker/source confidence reflects the capture method.
-- [ ] Events appear live in Live Mode and persist locally.
+- [x] Accessibility capture can emit transcript events when caption/speaker text is exposed by the desktop app.
+- [x] OCR fallback can read visible captions or speaker labels from the selected meeting window.
+- [x] Events use source `desktop-accessibility` or `desktop-ocr`.
+- [x] Speaker/source confidence reflects the capture method.
+- [x] Events appear live in Live Mode and persist locally.
 
 ## Blocked by
 
@@ -24,3 +24,5 @@ Add desktop caption/speaker capture for Zoom, Teams, and Meet windows using acce
 - `.scratch/live-meeting-copilot/issues/14-detect-desktop-meeting-windows-and-permissions.md`
 
 ## Comments
+
+- Added confirmed-window desktop caption emission controls for accessibility and OCR fallback. Events use `desktop-accessibility` with high speaker/source confidence or `desktop-ocr` with medium confidence, then flow through the shared capture event bus into Live Mode and IndexedDB.

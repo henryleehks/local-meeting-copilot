@@ -1,6 +1,9 @@
 import {
   MeetingTypes,
   SpeakerConfidence,
+  SourceConfidence,
+  TranscriptSources,
+  createTranscriptEvent,
   validateTranscriptEvent
 } from "../src/contracts.js";
 import { captureEventBus } from "./capture-event-bus.js";
@@ -77,6 +80,8 @@ const els = {
   desktopCaptureHelp: document.querySelector("#desktopCaptureHelp"),
   refreshDesktopWindowsBtn: document.querySelector("#refreshDesktopWindowsBtn"),
   confirmDesktopCaptureBtn: document.querySelector("#confirmDesktopCaptureBtn"),
+  emitAccessibilityCaptionBtn: document.querySelector("#emitAccessibilityCaptionBtn"),
+  emitOcrCaptionBtn: document.querySelector("#emitOcrCaptionBtn"),
   desktopWindowList: document.querySelector("#desktopWindowList")
 };
 
@@ -411,6 +416,8 @@ function renderDesktopWindows(result) {
   els.desktopCaptureHelp.textContent = result.message;
   els.desktopWindowList.textContent = "";
   els.confirmDesktopCaptureBtn.disabled = true;
+  els.emitAccessibilityCaptionBtn.disabled = true;
+  els.emitOcrCaptionBtn.disabled = true;
 
   if (!result.windows.length) {
     const help = document.createElement("div");
@@ -445,7 +452,29 @@ els.confirmDesktopCaptureBtn.addEventListener("click", () => {
   if (!selectedDesktopWindow) return;
   els.desktopCaptureStatus.textContent = "Confirmed";
   els.desktopCaptureHelp.textContent = `Selected ${selectedDesktopWindow.appName}: ${selectedDesktopWindow.title}. Capture still starts only after explicit user confirmation.`;
+  els.emitAccessibilityCaptionBtn.disabled = false;
+  els.emitOcrCaptionBtn.disabled = false;
 });
+
+function emitDesktopCaption(source) {
+  if (!state.meeting || !selectedDesktopWindow) return;
+  const accessibility = source === TranscriptSources.desktopAccessibility;
+  captureEventBus.emitTranscriptEvent(createTranscriptEvent({
+    id: `desktop-${source}-${Date.now()}`,
+    meetingId: state.meeting.id,
+    timestamp: new Date().toISOString(),
+    speakerName: accessibility ? "Desktop active speaker" : "Desktop speaker?",
+    speakerConfidence: accessibility ? SpeakerConfidence.high : SpeakerConfidence.medium,
+    text: accessibility
+      ? `Accessibility caption from ${selectedDesktopWindow.title}.`
+      : `OCR fallback caption read from ${selectedDesktopWindow.title}.`,
+    source,
+    sourceConfidence: accessibility ? SourceConfidence.high : SourceConfidence.medium
+  }));
+}
+
+els.emitAccessibilityCaptionBtn.addEventListener("click", () => emitDesktopCaption(TranscriptSources.desktopAccessibility));
+els.emitOcrCaptionBtn.addEventListener("click", () => emitDesktopCaption(TranscriptSources.desktopOcr));
 
 els.answerAssistBtn.addEventListener("click", async () => {
   if (!state.meeting) return;
