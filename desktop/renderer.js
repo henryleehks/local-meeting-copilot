@@ -11,6 +11,7 @@ import {
   normalizeMicrosoftCalendarEvent
 } from "../src/calendar-normalizer.js";
 import { buildAnswerSuggestion } from "../src/answer-assist.js";
+import { generateDraftMinutes } from "../src/minutes-generator.js";
 
 const sectionTitles = {
   calendar: "Calendar/Home",
@@ -36,6 +37,7 @@ const els = {
   meetingSummary: document.querySelector("#meetingSummary"),
   meetingMeta: document.querySelector("#meetingMeta"),
   startAssistBtn: document.querySelector("#startAssistBtn"),
+  stopCaptureBtn: document.querySelector("#stopCaptureBtn"),
   googleStatus: document.querySelector("#googleStatus"),
   googleHelpText: document.querySelector("#googleHelpText"),
   googleConnectBtn: document.querySelector("#googleConnectBtn"),
@@ -297,6 +299,17 @@ els.startAssistBtn.addEventListener("click", () => {
   els.captureStatus.textContent = "Live";
   els.liveCaptureLabel.textContent = "Live";
   setSection("live");
+});
+
+els.stopCaptureBtn.addEventListener("click", async () => {
+  if (!state.meeting) return;
+  els.captureStatus.textContent = "Stopped";
+  els.liveCaptureLabel.textContent = "Stopped";
+  const minutes = generateDraftMinutes(state.meeting);
+  await localMeetingStore.putMeetingMinutes(minutes);
+  state.meeting = await localMeetingStore.getMeetingBundle(state.meeting.id);
+  renderMeeting();
+  setSection("minutes");
 });
 
 async function refreshCalendarStatus(provider) {

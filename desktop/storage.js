@@ -157,6 +157,13 @@ export class LocalMeetingStore {
     return answerSuggestion;
   }
 
+  async putMeetingMinutes(minutes) {
+    const transaction = this.db.transaction(STORES.meetingMinutes, "readwrite");
+    transaction.objectStore(STORES.meetingMinutes).put(minutes);
+    await transactionDone(transaction);
+    return minutes;
+  }
+
   async putMeetingBundle(bundle) {
     const transaction = this.db.transaction(Object.values(STORES), "readwrite");
     const stores = Object.fromEntries(Object.values(STORES).map((name) => [name, transaction.objectStore(name)]));

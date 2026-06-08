@@ -12,11 +12,11 @@ Add the Minutes Mode generation flow. When the user stops capture, the app shoul
 
 ## Acceptance criteria
 
-- [ ] Stopping a live session triggers draft minutes generation.
-- [ ] Minutes include executive summary, decisions, action items with owner/date, open questions, risks/blockers, and follow-up draft.
-- [ ] Low-confidence or unresolved speaker labels are preserved visibly.
-- [ ] User can edit the generated minutes locally.
-- [ ] Sharing/exporting is not automatic.
+- [x] Stopping a live session triggers draft minutes generation.
+- [x] Minutes include executive summary, decisions, action items with owner/date, open questions, risks/blockers, and follow-up draft.
+- [x] Low-confidence or unresolved speaker labels are preserved visibly.
+- [x] User can edit the generated minutes locally.
+- [x] Sharing/exporting is not automatic.
 
 ## Blocked by
 
@@ -24,3 +24,5 @@ Add the Minutes Mode generation flow. When the user stops capture, the app shoul
 - `.scratch/live-meeting-copilot/issues/04-ingest-simulated-capture-events-end-to-end.md`
 
 ## Comments
+
+- Added `Stop Capture And Draft Minutes` in Live Mode. Stopping capture creates local draft minutes from current transcript events, preserves unresolved/low-confidence speaker labels, stores the draft in IndexedDB, and switches to editable Minutes Mode without any automatic sharing/export.
