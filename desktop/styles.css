@@ -345,6 +345,15 @@ h4 {
   line-height: 1.55;
 }
 
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px 0;
+  color: #344054;
+  line-height: 1.45;
+}
+
 .timeline {
   display: grid;
   gap: 12px;

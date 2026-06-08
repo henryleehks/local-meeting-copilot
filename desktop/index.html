@@ -202,6 +202,16 @@
               <p class="eyebrow">Audio retention policy</p>
               <h3 id="audioPolicyLabel">Delete after processing</h3>
               <p>Audio is fallback data and should be deleted by default unless a meeting explicitly opts in to keeping it.</p>
+              <label class="checkbox-row">
+                <input id="systemAudioFallbackToggle" type="checkbox" />
+                <span>Enable fallback system audio for this session</span>
+              </label>
+              <label class="checkbox-row">
+                <input id="keepAudioToggle" type="checkbox" />
+                <span>Keep audio for this meeting instead of deleting after processing</span>
+              </label>
+              <button id="processAudioFallbackBtn" class="secondary-action">Process diarized fallback</button>
+              <p id="audioFallbackStatus">Fallback audio is off.</p>
             </article>
             <article class="panel">
               <p class="eyebrow">Evaluated interview boundary</p>

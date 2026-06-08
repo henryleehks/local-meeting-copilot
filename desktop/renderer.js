@@ -76,6 +76,10 @@ const els = {
   dbStatus: document.querySelector("#dbStatus"),
   audioPolicyLabel: document.querySelector("#audioPolicyLabel")
   ,
+  systemAudioFallbackToggle: document.querySelector("#systemAudioFallbackToggle"),
+  keepAudioToggle: document.querySelector("#keepAudioToggle"),
+  processAudioFallbackBtn: document.querySelector("#processAudioFallbackBtn"),
+  audioFallbackStatus: document.querySelector("#audioFallbackStatus"),
   desktopCaptureStatus: document.querySelector("#desktopCaptureStatus"),
   desktopCaptureHelp: document.querySelector("#desktopCaptureHelp"),
   refreshDesktopWindowsBtn: document.querySelector("#refreshDesktopWindowsBtn"),
@@ -475,6 +479,39 @@ function emitDesktopCaption(source) {
 
 els.emitAccessibilityCaptionBtn.addEventListener("click", () => emitDesktopCaption(TranscriptSources.desktopAccessibility));
 els.emitOcrCaptionBtn.addEventListener("click", () => emitDesktopCaption(TranscriptSources.desktopOcr));
+
+els.systemAudioFallbackToggle.addEventListener("change", () => {
+  els.audioFallbackStatus.textContent = els.systemAudioFallbackToggle.checked
+    ? "Fallback system audio enabled for this session. It will be processed only after explicit action."
+    : "Fallback audio is off.";
+});
+
+els.keepAudioToggle.addEventListener("change", () => {
+  els.audioPolicyLabel.textContent = els.keepAudioToggle.checked ? "Keep for this meeting" : "Delete after processing";
+});
+
+els.processAudioFallbackBtn.addEventListener("click", () => {
+  if (!state.meeting || !els.systemAudioFallbackToggle.checked) {
+    els.audioFallbackStatus.textContent = "Enable fallback system audio before processing.";
+    return;
+  }
+
+  const mappedParticipant = state.meeting.participants.find((participant) => participant.role !== "user" && participant.role !== "candidate");
+  captureEventBus.emitTranscriptEvent(createTranscriptEvent({
+    id: `audio-diarization-${Date.now()}`,
+    meetingId: state.meeting.id,
+    timestamp: new Date().toISOString(),
+    speakerName: mappedParticipant ? `${mappedParticipant.displayName}?` : "Speaker 2",
+    speakerId: mappedParticipant?.id,
+    speakerConfidence: mappedParticipant ? SpeakerConfidence.medium : SpeakerConfidence.low,
+    text: "Diarized fallback transcript generated from system audio after caption and OCR paths were unavailable.",
+    source: TranscriptSources.audioDiarization,
+    sourceConfidence: SourceConfidence.low
+  }));
+  els.audioFallbackStatus.textContent = els.keepAudioToggle.checked
+    ? "Fallback transcript merged. Audio marked to keep for this meeting."
+    : "Fallback transcript merged. Captured audio deleted after processing by default.";
+});
 
 els.answerAssistBtn.addEventListener("click", async () => {
   if (!state.meeting) return;

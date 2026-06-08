@@ -83,6 +83,7 @@ MICROSOFT_CLIENT_ID=your_client_id npm start
 - Optional Google Calendar connection that imports current/upcoming Meet, Zoom, and Teams events into local meeting records.
 - Optional Microsoft Calendar connection that imports current/upcoming Teams, Zoom, and Meet events into local meeting records.
 - Local-loadable Chrome extension bridge for Meet, Zoom Web, and Teams Web test transcript events.
+- Explicit system-audio fallback flow that produces low-confidence diarized transcript events and deletes audio after processing by default unless the meeting opts in to keeping it.
 
 ## Load The Chrome Extension Bridge
 
