@@ -278,6 +278,59 @@ h4 {
   font-weight: 900;
 }
 
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.secondary-action,
+.ghost-action {
+  min-height: 40px;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-weight: 900;
+}
+
+.secondary-action {
+  color: #0f172a;
+  background: #d9f5ef;
+}
+
+.secondary-action:disabled,
+.ghost-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ghost-action {
+  color: #425466;
+  background: #eef2f7;
+}
+
+.event-list {
+  display: grid;
+  gap: 8px;
+}
+
+.event-row {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ink);
+  background: #fff;
+  text-align: left;
+}
+
+.event-row span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .timeline {
   display: grid;
   gap: 12px;

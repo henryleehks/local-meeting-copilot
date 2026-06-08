@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const { join } = require("node:path");
+const { GoogleCalendarClient } = require("./google-calendar.cjs");
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -24,7 +25,13 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  const googleCalendar = new GoogleCalendarClient(app, shell);
+
   ipcMain.handle("app:version", () => app.getVersion());
+  ipcMain.handle("google-calendar:status", () => googleCalendar.status());
+  ipcMain.handle("google-calendar:connect", () => googleCalendar.connect());
+  ipcMain.handle("google-calendar:disconnect", () => googleCalendar.disconnect());
+  ipcMain.handle("google-calendar:fetch-upcoming-events", () => googleCalendar.fetchUpcomingEvents());
 
   app.on("web-contents-created", (_event, contents) => {
     contents.setWindowOpenHandler(({ url }) => {

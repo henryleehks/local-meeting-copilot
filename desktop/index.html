@@ -73,6 +73,23 @@
               <h3>Private by default</h3>
               <p>Meetings, participants, transcript events, answer suggestions, minutes, settings, and demo data live locally before any explicit export.</p>
             </article>
+
+            <article class="panel wide">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Google Calendar</p>
+                  <h3>Current and upcoming meetings</h3>
+                </div>
+                <span id="googleStatus" class="badge">Checking</span>
+              </div>
+              <p id="googleHelpText" class="lead">Connect Google Calendar to detect Meet, Zoom, and Teams links. Capture still requires Start Live Assist.</p>
+              <div class="button-row">
+                <button id="googleConnectBtn" class="secondary-action">Connect Google</button>
+                <button id="googleSyncBtn" class="secondary-action">Sync events</button>
+                <button id="googleDisconnectBtn" class="ghost-action">Disconnect</button>
+              </div>
+              <div id="googleEventsList" class="event-list" aria-label="Google Calendar events"></div>
+            </article>
           </div>
         </section>
 

@@ -112,6 +112,12 @@ export class LocalMeetingStore {
     return this.getMeetingBundle(meeting.id);
   }
 
+  async listMeetings() {
+    const transaction = this.db.transaction(STORES.meetings, "readonly");
+    const meetings = await requestToPromise(transaction.objectStore(STORES.meetings).getAll());
+    return meetings.sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)));
+  }
+
   async getMeetingBundle(meetingId) {
     const [meeting, participants, transcriptEvents, answerSuggestions, minutesDrafts] = await Promise.all([
       requestToPromise(this.db.transaction(STORES.meetings, "readonly").objectStore(STORES.meetings).get(meetingId)),
@@ -142,6 +148,21 @@ export class LocalMeetingStore {
     transaction.objectStore(STORES.transcriptEvents).put(event);
     await transactionDone(transaction);
     return event;
+  }
+
+  async putMeetingBundle(bundle) {
+    const transaction = this.db.transaction(Object.values(STORES), "readwrite");
+    const stores = Object.fromEntries(Object.values(STORES).map((name) => [name, transaction.objectStore(name)]));
+    const { participants = [], transcriptEvents = [], answerSuggestion, minutes, ...meeting } = bundle;
+
+    stores.meetings.put(meeting);
+    participants.forEach((participant) => stores.participants.put({ ...participant, meetingId: meeting.id }));
+    transcriptEvents.forEach((event) => stores.transcriptEvents.put(event));
+    if (answerSuggestion) stores.answerSuggestions.put(answerSuggestion);
+    if (minutes) stores.meetingMinutes.put(minutes);
+
+    await transactionDone(transaction);
+    return this.getMeetingBundle(meeting.id);
   }
 }
 

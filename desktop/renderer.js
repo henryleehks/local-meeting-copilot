@@ -6,6 +6,7 @@ import {
 import { captureEventBus } from "./capture-event-bus.js";
 import { createSimulatedCaptureEvent, simulatorSources } from "./capture-simulator.js";
 import { localMeetingStore } from "./storage.js";
+import { normalizeGoogleCalendarEvent } from "../src/calendar-normalizer.js";
 
 const sectionTitles = {
   calendar: "Calendar/Home",
@@ -31,6 +32,12 @@ const els = {
   meetingSummary: document.querySelector("#meetingSummary"),
   meetingMeta: document.querySelector("#meetingMeta"),
   startAssistBtn: document.querySelector("#startAssistBtn"),
+  googleStatus: document.querySelector("#googleStatus"),
+  googleHelpText: document.querySelector("#googleHelpText"),
+  googleConnectBtn: document.querySelector("#googleConnectBtn"),
+  googleSyncBtn: document.querySelector("#googleSyncBtn"),
+  googleDisconnectBtn: document.querySelector("#googleDisconnectBtn"),
+  googleEventsList: document.querySelector("#googleEventsList"),
   captureStatus: document.querySelector("#captureStatus"),
   liveMeetingTitle: document.querySelector("#liveMeetingTitle"),
   livePlatformLabel: document.querySelector("#livePlatformLabel"),
@@ -63,6 +70,7 @@ function renderMeta(meeting) {
   const rows = [
     ["Meeting type", meetingTypeLabel(meeting.meetingType)],
     ["Participants", meeting.participants.map((participant) => participant.displayName).join(", ")],
+    ["Join URL", meeting.joinUrl || "No supported meeting URL detected"],
     ["Capture policy", "Start Live Assist required"],
     ["Audio retention", meeting.audioRetentionPolicy === "delete-after-processing" ? "Delete after processing" : "Keep for this meeting"]
   ];
@@ -169,6 +177,17 @@ async function loadMeeting(meetingType = state.meetingType) {
   renderMeeting();
 }
 
+async function loadMeetingById(meetingId) {
+  els.dbStatus.textContent = "Loading selected meeting...";
+  const meeting = await localMeetingStore.getMeetingBundle(meetingId);
+  if (!meeting) throw new Error(`No local meeting found for id: ${meetingId}`);
+  state.meeting = meeting;
+  state.meetingType = meeting.meetingType;
+  els.typeToggles.forEach((toggle) => toggle.classList.toggle("active", toggle.dataset.meetingType === state.meetingType));
+  els.dbStatus.textContent = "Selected meeting loaded locally";
+  renderMeeting();
+}
+
 async function handleCaptureTranscriptEvent(event) {
   if (!state.meeting || event.meetingId !== state.meeting.id) return;
 
@@ -201,6 +220,11 @@ function renderMeeting() {
   renderMinutes(meeting);
 }
 
+function setGoogleStatus(text, detail = "") {
+  els.googleStatus.textContent = text;
+  if (detail) els.googleHelpText.textContent = detail;
+}
+
 function setSection(section) {
   state.activeSection = section;
   els.sectionTitle.textContent = sectionTitles[section];
@@ -224,6 +248,89 @@ els.startAssistBtn.addEventListener("click", () => {
   els.captureStatus.textContent = "Live";
   els.liveCaptureLabel.textContent = "Live";
   setSection("live");
+});
+
+async function refreshGoogleStatus() {
+  if (!window.desktopApp?.googleCalendar) {
+    setGoogleStatus("Unavailable", "Google Calendar IPC is unavailable in this runtime.");
+    return;
+  }
+
+  const status = await window.desktopApp.googleCalendar.status();
+  els.googleConnectBtn.disabled = !status.configured || status.connected;
+  els.googleSyncBtn.disabled = !status.connected;
+  els.googleDisconnectBtn.disabled = !status.connected;
+
+  if (!status.configured) {
+    setGoogleStatus("Not configured", "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, then restart the desktop app.");
+  } else if (status.connected) {
+    setGoogleStatus("Connected", "Sync reads current and upcoming Google Calendar events, then stores normalized meetings locally.");
+  } else {
+    setGoogleStatus("Ready", "Connect Google Calendar to read current and upcoming external calls.");
+  }
+}
+
+function renderGoogleEvents(meetings) {
+  els.googleEventsList.textContent = "";
+  if (!meetings.length) {
+    els.googleEventsList.textContent = "No current or upcoming supported Google Calendar meetings found.";
+    return;
+  }
+
+  meetings.forEach((meeting) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "event-row";
+    row.innerHTML = `
+      <strong></strong>
+      <span>${meeting.platformLabel} · ${meeting.participants.length} participant${meeting.participants.length === 1 ? "" : "s"}</span>
+    `;
+    row.querySelector("strong").textContent = meeting.title;
+    row.addEventListener("click", () => loadMeetingById(meeting.id).catch(showFatalError));
+    els.googleEventsList.append(row);
+  });
+}
+
+async function syncGoogleCalendar() {
+  setGoogleStatus("Syncing", "Reading Google Calendar events...");
+  const events = await window.desktopApp.googleCalendar.fetchUpcomingEvents();
+  const meetings = events
+    .map(normalizeGoogleCalendarEvent)
+    .filter((meeting) => meeting.joinUrl);
+
+  const saved = [];
+  for (const meeting of meetings) {
+    saved.push(await localMeetingStore.putMeetingBundle(meeting));
+  }
+
+  renderGoogleEvents(saved);
+  setGoogleStatus("Synced", `Imported ${saved.length} Google Calendar meeting${saved.length === 1 ? "" : "s"} locally.`);
+  if (saved[0]) await loadMeetingById(saved[0].id);
+}
+
+els.googleConnectBtn.addEventListener("click", async () => {
+  try {
+    setGoogleStatus("Connecting", "Opening Google OAuth in your browser...");
+    await window.desktopApp.googleCalendar.connect();
+    await refreshGoogleStatus();
+    await syncGoogleCalendar();
+  } catch (error) {
+    setGoogleStatus("Connect failed", error.message || "Could not connect Google Calendar.");
+  }
+});
+
+els.googleSyncBtn.addEventListener("click", () => {
+  syncGoogleCalendar().catch((error) => setGoogleStatus("Sync failed", error.message || "Could not sync Google Calendar."));
+});
+
+els.googleDisconnectBtn.addEventListener("click", async () => {
+  try {
+    await window.desktopApp.googleCalendar.disconnect();
+    renderGoogleEvents([]);
+    await refreshGoogleStatus();
+  } catch (error) {
+    setGoogleStatus("Disconnect failed", error.message || "Could not disconnect Google Calendar.");
+  }
 });
 
 function renderSimulatorControls() {
@@ -269,6 +376,7 @@ async function boot() {
   renderSettings();
   renderSimulatorControls();
   await loadMeeting();
+  await refreshGoogleStatus();
 }
 
 boot().catch(showFatalError);

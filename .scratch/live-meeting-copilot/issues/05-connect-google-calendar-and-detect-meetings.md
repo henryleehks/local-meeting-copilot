@@ -12,11 +12,11 @@ Add Google authorization and calendar read support so the user can see current a
 
 ## Acceptance criteria
 
-- [ ] User can connect and disconnect Google Calendar.
-- [ ] Current and upcoming events appear in the desktop app.
-- [ ] Meet, Zoom, and Teams meeting URLs are detected from event fields.
-- [ ] Participants are normalized into the shared Participant model.
-- [ ] User must explicitly click `Start Live Assist`; capture never starts automatically.
+- [x] User can connect and disconnect Google Calendar.
+- [x] Current and upcoming events appear in the desktop app.
+- [x] Meet, Zoom, and Teams meeting URLs are detected from event fields.
+- [x] Participants are normalized into the shared Participant model.
+- [x] User must explicitly click `Start Live Assist`; capture never starts automatically.
 
 ## Blocked by
 
@@ -24,3 +24,5 @@ Add Google authorization and calendar read support so the user can see current a
 - `.scratch/live-meeting-copilot/issues/02-persist-meetings-and-transcript-events-locally.md`
 
 ## Comments
+
+- Implemented Google Calendar OAuth and events fetch IPC in the Electron main process, renderer controls for connect/sync/disconnect, meeting URL detection for Meet/Zoom/Teams, participant normalization, and local persistence of imported calendar meetings. Runtime smoke tested the no-credentials path; live OAuth sync requires `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.

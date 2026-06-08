@@ -53,6 +53,16 @@ Optional model overrides:
 OPENAI_MODEL=gpt-5.4-mini OPENAI_TRANSCRIBE_MODEL=gpt-4o-transcribe-diarize npm start
 ```
 
+## Optional Google Calendar Setup
+
+Google Calendar import uses an installed-app OAuth loopback flow in the Electron main process.
+
+```bash
+GOOGLE_CLIENT_ID=your_client_id GOOGLE_CLIENT_SECRET=your_client_secret npm start
+```
+
+Without these variables, the desktop app still runs with local seed meetings.
+
 ## Features
 
 - Electron desktop shell with placeholder navigation for Calendar/Home, Live Mode, Minutes Mode, and Settings/Privacy.
@@ -60,6 +70,7 @@ OPENAI_MODEL=gpt-5.4-mini OPENAI_TRANSCRIBE_MODEL=gpt-4o-transcribe-diarize npm 
 - Demo meeting type toggle for founder/customer calls and candidate prep/mock interviews.
 - Local IndexedDB persistence for development seed meetings, participants, transcript events, answer suggestions, minutes, and privacy settings.
 - Local capture event bus and simulator for Meet, Zoom, Teams, desktop accessibility, OCR, and audio diarization transcript events.
+- Optional Google Calendar connection that imports current/upcoming Meet, Zoom, and Teams events into local meeting records.
 - Record microphone audio or screen audio.
 - Live browser transcription where supported.
 - Name meeting participants and tag the live transcript with the current speaker.
