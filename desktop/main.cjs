@@ -16,6 +16,10 @@ function createWindow() {
     }
   });
 
+  window.webContents.on("console-message", (event) => {
+    if (event.level >= 2) console.error(`Renderer: ${event.message}`);
+  });
+
   window.loadFile(join(__dirname, "index.html"));
 }
 

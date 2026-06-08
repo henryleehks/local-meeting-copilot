@@ -2,6 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Live Meeting Copilot</title>
     <link rel="stylesheet" href="./styles.css" />
@@ -26,6 +30,7 @@
           <div>
             <strong>Desktop shell</strong>
             <p id="runtimeVersion">Electron runtime ready</p>
+            <p id="dbStatus">Opening local database...</p>
           </div>
         </div>
       </aside>
@@ -66,7 +71,7 @@
             <article class="panel">
               <p class="eyebrow">Local storage</p>
               <h3>Private by default</h3>
-              <p>Meetings, transcript events, minutes, settings, and demo data live locally before any explicit export.</p>
+              <p>Meetings, participants, transcript events, answer suggestions, minutes, settings, and demo data live locally before any explicit export.</p>
             </article>
           </div>
         </section>
@@ -111,7 +116,7 @@
           <div class="section-grid">
             <article class="panel">
               <p class="eyebrow">Audio retention policy</p>
-              <h3>Delete after processing</h3>
+              <h3 id="audioPolicyLabel">Delete after processing</h3>
               <p>Audio is fallback data and should be deleted by default unless a meeting explicitly opts in to keeping it.</p>
             </article>
             <article class="panel">

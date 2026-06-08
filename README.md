@@ -58,6 +58,7 @@ OPENAI_MODEL=gpt-5.4-mini OPENAI_TRANSCRIBE_MODEL=gpt-4o-transcribe-diarize npm 
 - Electron desktop shell with placeholder navigation for Calendar/Home, Live Mode, Minutes Mode, and Settings/Privacy.
 - Shared event contracts for meetings, participants, transcript events, answer suggestions, and meeting minutes.
 - Demo meeting type toggle for founder/customer calls and candidate prep/mock interviews.
+- Local IndexedDB persistence for development seed meetings, participants, transcript events, answer suggestions, minutes, and privacy settings.
 - Record microphone audio or screen audio.
 - Live browser transcription where supported.
 - Name meeting participants and tag the live transcript with the current speaker.
