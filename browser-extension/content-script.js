@@ -53,6 +53,12 @@ function createCaptionTranscriptEvent(detected, caption) {
   };
 }
 
+const overlayState = {
+  connected: false,
+  latestQuestion: "No question detected yet.",
+  suggestedAnswer: "Click Answer for a short grounded response."
+};
+
 function parseCaptionText(rawText) {
   const lines = rawText
     .split(/\n+/)
@@ -151,6 +157,10 @@ function installBrowserCaptionAdapter(detected) {
         type: "TRANSCRIPT_EVENT",
         event: createCaptionTranscriptEvent(detected, parsed)
       });
+      if (parsed.text.includes("?")) {
+        overlayState.latestQuestion = parsed.text;
+        renderOverlay(detected);
+      }
     });
   }
 
@@ -162,41 +172,76 @@ function installBrowserCaptionAdapter(detected) {
   scanCaptions();
 }
 
-function ensureBridgeButton(detected) {
-  if (document.querySelector("#live-meeting-copilot-test")) return;
-
-  const button = document.createElement("button");
-  button.id = "live-meeting-copilot-test";
-  button.type = "button";
-  button.textContent = "Send Copilot test event";
-  button.style.cssText = [
+function overlayStyles() {
+  return [
     "position:fixed",
     "right:16px",
     "bottom:16px",
     "z-index:2147483647",
-    "border:0",
+    "width:280px",
+    "border:1px solid rgba(255,255,255,.18)",
     "border-radius:8px",
-    "padding:10px 12px",
-    "font:600 13px system-ui,sans-serif",
+    "padding:12px",
+    "font:13px system-ui,sans-serif",
     "color:#fff",
-    "background:#0f766e",
+    "background:#101828",
     "box-shadow:0 10px 30px rgba(0,0,0,.2)",
-    "cursor:pointer"
+    "line-height:1.4"
   ].join(";");
+}
 
-  button.addEventListener("click", () => {
-    chrome.runtime.sendMessage({
-      type: "TRANSCRIPT_EVENT",
-      event: createTestTranscriptEvent(detected)
-    }, (response) => {
-      button.textContent = response?.ok ? "Sent to Copilot" : "Bridge unavailable";
-      setTimeout(() => {
-        button.textContent = "Send Copilot test event";
-      }, 1800);
-    });
+function sendTestEvent(detected, button) {
+  chrome.runtime.sendMessage({
+    type: "TRANSCRIPT_EVENT",
+    event: createTestTranscriptEvent(detected)
+  }, (response) => {
+    overlayState.connected = Boolean(response?.ok);
+    overlayState.suggestedAnswer = response?.ok ? "Bridge test event sent. Use the desktop app for full context." : "Desktop bridge unavailable.";
+    renderOverlay(detected);
+    if (button) button.disabled = false;
   });
+}
 
-  document.documentElement.append(button);
+function renderOverlay(detected) {
+  let overlay = document.querySelector("#live-meeting-copilot-overlay");
+  if (!overlay) {
+    overlay = document.createElement("section");
+    overlay.id = "live-meeting-copilot-overlay";
+    overlay.style.cssText = overlayStyles();
+    document.documentElement.append(overlay);
+  }
+
+  overlay.innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">
+      <strong>Live Copilot</strong>
+      <span>${overlayState.connected ? "Connected" : "Checking"}</span>
+    </div>
+    <div style="margin-bottom:8px;color:#cbd5e1;">
+      <strong style="display:block;color:#fff;">Latest question</strong>
+      <span id="live-meeting-copilot-question"></span>
+    </div>
+    <button id="live-meeting-copilot-answer" style="width:100%;border:0;border-radius:8px;padding:8px 10px;color:#fff;background:#0f766e;font-weight:700;cursor:pointer;">What should I answer?</button>
+    <div style="margin-top:8px;color:#d1fae5;">
+      <strong style="display:block;color:#fff;">Short answer</strong>
+      <span id="live-meeting-copilot-answer-text"></span>
+    </div>
+  `;
+  overlay.querySelector("#live-meeting-copilot-question").textContent = overlayState.latestQuestion;
+  overlay.querySelector("#live-meeting-copilot-answer-text").textContent = overlayState.suggestedAnswer;
+  overlay.querySelector("#live-meeting-copilot-answer").addEventListener("click", (event) => {
+    event.currentTarget.disabled = true;
+    overlayState.suggestedAnswer = overlayState.latestQuestion.includes("?")
+      ? "Answer from your transcript and notes; keep it concise and avoid inventing facts."
+      : "No clear question yet. Ask for clarification before committing.";
+    sendTestEvent(detected, event.currentTarget);
+  });
+}
+
+function ensureOverlay(detected) {
+  chrome.runtime.sendMessage({ type: "BRIDGE_STATUS" }, (response) => {
+    overlayState.connected = Boolean(response?.ok);
+    renderOverlay(detected);
+  });
 }
 
 function boot() {
@@ -204,7 +249,7 @@ function boot() {
   if (!detected) return;
 
   chrome.runtime.sendMessage({ type: "BRIDGE_STATUS" }, () => {});
-  ensureBridgeButton(detected);
+  ensureOverlay(detected);
   installBrowserCaptionAdapter(detected);
 }
 

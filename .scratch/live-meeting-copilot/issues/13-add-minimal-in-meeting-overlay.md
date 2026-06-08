@@ -12,11 +12,11 @@ Add the small companion overlay in browser meeting pages. The overlay should not
 
 ## Acceptance criteria
 
-- [ ] Overlay can appear in supported browser meeting pages.
-- [ ] Overlay shows listening/connection status.
-- [ ] Overlay shows the latest detected or selected question.
-- [ ] Overlay can trigger `What should I answer?`.
-- [ ] Overlay shows a short suggested answer without exposing the full dashboard.
+- [x] Overlay can appear in supported browser meeting pages.
+- [x] Overlay shows listening/connection status.
+- [x] Overlay shows the latest detected or selected question.
+- [x] Overlay can trigger `What should I answer?`.
+- [x] Overlay shows a short suggested answer without exposing the full dashboard.
 
 ## Blocked by
 
@@ -24,3 +24,5 @@ Add the small companion overlay in browser meeting pages. The overlay should not
 - `.scratch/live-meeting-copilot/issues/11-generate-grounded-live-answer-suggestions.md`
 
 ## Comments
+
+- Replaced the one-off extension test button with a compact in-meeting overlay for supported browser meeting pages. It shows desktop bridge connection status, latest detected question from captions, a `What should I answer?` trigger, and a short answer preview without exposing the full desktop dashboard.
