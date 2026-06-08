@@ -81,21 +81,31 @@ function parseCaptionText(rawText) {
   }
 
   return {
-    speakerName: "Google Meet speaker",
+    speakerName: "Browser meeting speaker",
     speakerConfidence: "medium",
     text,
     sourceConfidence: "medium"
   };
 }
 
-function likelyCaptionElements() {
+function likelyCaptionElements(detected) {
   const selectors = [
     "[aria-live]",
     "[role='status']",
     "[role='log']",
     "[aria-label*='caption' i]",
-    "[aria-label*='subtitle' i]"
+    "[aria-label*='subtitle' i]",
+    "[class*='caption' i]",
+    "[class*='subtitle' i]",
+    "[data-testid*='caption' i]"
   ];
+  if (detected.platform === "zoom") {
+    selectors.push("[class*='live-transcription' i]", "[class*='closed-caption' i]", "[aria-label*='transcription' i]");
+  }
+  if (detected.platform === "microsoft-teams") {
+    selectors.push("[data-tid*='caption' i]", "[class*='ts-calling-caption' i]", "[aria-label*='live caption' i]");
+  }
+
   const candidates = new Set();
   selectors.forEach((selector) => {
     document.querySelectorAll(selector).forEach((element) => candidates.add(element));
@@ -112,18 +122,26 @@ function likelyCaptionElements() {
   return [...candidates].filter(isVisible);
 }
 
-function installGoogleMeetCaptionAdapter(detected) {
-  if (window.__liveMeetingCopilotMeetAdapter) return;
-  window.__liveMeetingCopilotMeetAdapter = true;
+function fallbackSpeakerName(detected) {
+  if (detected.platform === "google-meet") return "Google Meet speaker";
+  if (detected.platform === "zoom") return "Zoom speaker";
+  if (detected.platform === "microsoft-teams") return "Teams speaker";
+  return "Browser meeting speaker";
+}
+
+function installBrowserCaptionAdapter(detected) {
+  if (window.__liveMeetingCopilotCaptionAdapter) return;
+  window.__liveMeetingCopilotCaptionAdapter = true;
 
   const emitted = new Set();
   let timer = null;
 
   function scanCaptions() {
     timer = null;
-    likelyCaptionElements().forEach((element) => {
+    likelyCaptionElements(detected).forEach((element) => {
       const parsed = parseCaptionText(element.innerText || element.textContent || "");
       if (!parsed) return;
+      if (parsed.speakerName === "Browser meeting speaker") parsed.speakerName = fallbackSpeakerName(detected);
       const fingerprint = textFingerprint(`${parsed.speakerName}:${parsed.text}`);
       if (emitted.has(fingerprint)) return;
       emitted.add(fingerprint);
@@ -187,7 +205,7 @@ function boot() {
 
   chrome.runtime.sendMessage({ type: "BRIDGE_STATUS" }, () => {});
   ensureBridgeButton(detected);
-  if (detected.platform === "google-meet") installGoogleMeetCaptionAdapter(detected);
+  installBrowserCaptionAdapter(detected);
 }
 
 chrome.runtime.onMessage.addListener((message) => {

@@ -12,11 +12,11 @@ Add the Teams Web browser adapter. When captions and speaker labels are availabl
 
 ## Acceptance criteria
 
-- [ ] Extension recognizes an active Teams Web meeting tab.
-- [ ] Extension captures visible caption text where available.
-- [ ] Extension captures or infers the visible speaker label where available.
-- [ ] Captured events appear in Live Mode with source `teams-browser-caption`.
-- [ ] The adapter degrades gracefully when captions are unavailable.
+- [x] Extension recognizes an active Teams Web meeting tab.
+- [x] Extension captures visible caption text where available.
+- [x] Extension captures or infers the visible speaker label where available.
+- [x] Captured events appear in Live Mode with source `teams-browser-caption`.
+- [x] The adapter degrades gracefully when captions are unavailable.
 
 ## Blocked by
 
@@ -24,3 +24,5 @@ Add the Teams Web browser adapter. When captions and speaker labels are availabl
 - `.scratch/live-meeting-copilot/issues/06-connect-microsoft-calendar-and-detect-meetings.md`
 
 ## Comments
+
+- Generalized the browser caption observer for Teams Web URL matches. The adapter scans visible live-caption regions, parses direct speaker labels where available, falls back to medium-confidence `Teams speaker`, and emits `teams-browser-caption` events through the existing extension bridge.
