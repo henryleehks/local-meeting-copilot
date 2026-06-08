@@ -2,6 +2,19 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("desktopApp", {
   getVersion: () => ipcRenderer.invoke("app:version"),
+  extensionBridge: {
+    status: () => ipcRenderer.invoke("extension-bridge:status"),
+    onStatus: (callback) => {
+      const listener = (_event, status) => callback(status);
+      ipcRenderer.on("extension-bridge:status", listener);
+      return () => ipcRenderer.removeListener("extension-bridge:status", listener);
+    },
+    onTranscriptEvent: (callback) => {
+      const listener = (_event, transcriptEvent) => callback(transcriptEvent);
+      ipcRenderer.on("extension-bridge:transcript-event", listener);
+      return () => ipcRenderer.removeListener("extension-bridge:transcript-event", listener);
+    }
+  },
   googleCalendar: {
     status: () => ipcRenderer.invoke("google-calendar:status"),
     connect: () => ipcRenderer.invoke("google-calendar:connect"),

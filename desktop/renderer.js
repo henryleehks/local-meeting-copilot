@@ -56,6 +56,7 @@ const els = {
   suggestedAnswer: document.querySelector("#suggestedAnswer"),
   assistPromptTitle: document.querySelector("#assistPromptTitle"),
   eventBusStatus: document.querySelector("#eventBusStatus"),
+  extensionBridgeStatus: document.querySelector("#extensionBridgeStatus"),
   simulatorControls: document.querySelector("#simulatorControls"),
   simulatorStatus: document.querySelector("#simulatorStatus"),
   minutesMeetingTitle: document.querySelector("#minutesMeetingTitle"),
@@ -409,6 +410,26 @@ captureEventBus.onTranscriptEvent((event) => {
 
 window.desktopApp?.getVersion().then((version) => {
   els.runtimeVersion.textContent = `Electron app v${version}`;
+});
+
+window.desktopApp?.extensionBridge?.status().then((status) => {
+  els.extensionBridgeStatus.textContent = `Extension bridge listening at http://127.0.0.1:${status.port}.`;
+});
+
+window.desktopApp?.extensionBridge?.onStatus((status) => {
+  els.extensionBridgeStatus.textContent = status.port
+    ? `Extension bridge listening at http://127.0.0.1:${status.port}.`
+    : "Chrome extension checked in with the desktop bridge.";
+});
+
+window.desktopApp?.extensionBridge?.onTranscriptEvent((event) => {
+  try {
+    captureEventBus.emitTranscriptEvent(event);
+    els.eventBusStatus.textContent = "Extension event received";
+  } catch (error) {
+    els.eventBusStatus.textContent = "Extension event rejected";
+    els.simulatorStatus.textContent = error.message || "Invalid extension transcript event.";
+  }
 });
 
 function showFatalError(error) {

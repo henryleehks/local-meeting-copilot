@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Live Meeting Copilot Bridge",
+  "version": "0.1.0",
+  "description": "Local bridge companion for Live Meeting Copilot browser meetings.",
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "http://127.0.0.1:47843/*",
+    "https://meet.google.com/*",
+    "https://*.zoom.us/*",
+    "https://*.zoom.com/*",
+    "https://teams.microsoft.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://meet.google.com/*",
+        "https://*.zoom.us/*",
+        "https://*.zoom.com/*",
+        "https://teams.microsoft.com/*"
+      ],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Live Meeting Copilot Bridge"
+  }
+}

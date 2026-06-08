@@ -2,9 +2,12 @@ const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const { join } = require("node:path");
 const { GoogleCalendarClient } = require("./google-calendar.cjs");
 const { MicrosoftCalendarClient } = require("./microsoft-calendar.cjs");
+const { ExtensionBridge } = require("./extension-bridge.cjs");
+
+let mainWindow;
 
 function createWindow() {
-  const window = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 1040,
@@ -18,18 +21,23 @@ function createWindow() {
     }
   });
 
-  window.webContents.on("console-message", (event) => {
+  mainWindow.webContents.on("console-message", (event) => {
     if (event.level >= 2) console.error(`Renderer: ${event.message}`);
   });
 
-  window.loadFile(join(__dirname, "index.html"));
+  mainWindow.loadFile(join(__dirname, "index.html"));
 }
 
 app.whenReady().then(() => {
   const googleCalendar = new GoogleCalendarClient(app, shell);
   const microsoftCalendar = new MicrosoftCalendarClient(app, shell);
+  const extensionBridge = new ExtensionBridge({
+    onTranscriptEvent: (event) => mainWindow?.webContents.send("extension-bridge:transcript-event", event),
+    onConnection: (status) => mainWindow?.webContents.send("extension-bridge:status", status)
+  });
 
   ipcMain.handle("app:version", () => app.getVersion());
+  ipcMain.handle("extension-bridge:status", () => ({ port: extensionBridge.port }));
   ipcMain.handle("google-calendar:status", () => googleCalendar.status());
   ipcMain.handle("google-calendar:connect", () => googleCalendar.connect());
   ipcMain.handle("google-calendar:disconnect", () => googleCalendar.disconnect());
@@ -47,6 +55,9 @@ app.whenReady().then(() => {
   });
 
   createWindow();
+  extensionBridge.start()
+    .then((port) => mainWindow?.webContents.send("extension-bridge:status", { connected: true, port }))
+    .catch((error) => console.error(`Extension bridge failed: ${error.message}`));
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

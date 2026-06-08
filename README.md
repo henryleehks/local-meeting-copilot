@@ -82,6 +82,17 @@ MICROSOFT_CLIENT_ID=your_client_id npm start
 - Local capture event bus and simulator for Meet, Zoom, Teams, desktop accessibility, OCR, and audio diarization transcript events.
 - Optional Google Calendar connection that imports current/upcoming Meet, Zoom, and Teams events into local meeting records.
 - Optional Microsoft Calendar connection that imports current/upcoming Teams, Zoom, and Meet events into local meeting records.
+- Local-loadable Chrome extension bridge for Meet, Zoom Web, and Teams Web test transcript events.
+
+## Load The Chrome Extension Bridge
+
+1. Start the Electron app with `npm start`.
+2. Open Chrome to `chrome://extensions`.
+3. Enable Developer mode.
+4. Click `Load unpacked`.
+5. Select `/Users/henry/local-meeting-copilot/browser-extension`.
+
+The extension detects Google Meet, Zoom Web, and Microsoft Teams Web URLs. On supported pages it injects a small test button that sends a structured transcript event to the desktop bridge at `http://127.0.0.1:47843`.
 - Record microphone audio or screen audio.
 - Live browser transcription where supported.
 - Name meeting participants and tag the live transcript with the current speaker.
