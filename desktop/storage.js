@@ -150,6 +150,13 @@ export class LocalMeetingStore {
     return event;
   }
 
+  async putAnswerSuggestion(answerSuggestion) {
+    const transaction = this.db.transaction(STORES.answerSuggestions, "readwrite");
+    transaction.objectStore(STORES.answerSuggestions).put(answerSuggestion);
+    await transactionDone(transaction);
+    return answerSuggestion;
+  }
+
   async putMeetingBundle(bundle) {
     const transaction = this.db.transaction(Object.values(STORES), "readwrite");
     const stores = Object.fromEntries(Object.values(STORES).map((name) => [name, transaction.objectStore(name)]));

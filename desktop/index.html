@@ -140,8 +140,16 @@
             <article class="panel assist-panel">
               <p class="eyebrow">Answer assist</p>
               <h3 id="assistPromptTitle">Grounded answer suggestion</h3>
+              <label class="assist-field">
+                <span>Selected or latest question</span>
+                <textarea id="questionInput" rows="3"></textarea>
+              </label>
+              <label class="assist-field">
+                <span>Private notes</span>
+                <textarea id="privateNotesInput" rows="4" placeholder="Facts, constraints, goals, resume notes, customer context..."></textarea>
+              </label>
               <p id="latestQuestion" class="question"></p>
-              <button class="primary">What should I answer?</button>
+              <button id="answerAssistBtn" class="primary">What should I answer?</button>
               <div id="suggestedAnswer" class="answer-preview"></div>
 
               <div class="simulator-panel">

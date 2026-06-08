@@ -388,6 +388,29 @@ h4 {
   gap: 14px;
 }
 
+.assist-field {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.assist-field textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px;
+  color: var(--ink);
+  background: #fff;
+  resize: vertical;
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: none;
+}
+
 .question,
 .answer-preview {
   border-radius: 8px;

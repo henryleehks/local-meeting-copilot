@@ -10,6 +10,7 @@ import {
   normalizeGoogleCalendarEvent,
   normalizeMicrosoftCalendarEvent
 } from "../src/calendar-normalizer.js";
+import { buildAnswerSuggestion } from "../src/answer-assist.js";
 
 const sectionTitles = {
   calendar: "Calendar/Home",
@@ -53,6 +54,9 @@ const els = {
   liveCaptureLabel: document.querySelector("#liveCaptureLabel"),
   transcriptTimeline: document.querySelector("#transcriptTimeline"),
   latestQuestion: document.querySelector("#latestQuestion"),
+  questionInput: document.querySelector("#questionInput"),
+  privateNotesInput: document.querySelector("#privateNotesInput"),
+  answerAssistBtn: document.querySelector("#answerAssistBtn"),
   suggestedAnswer: document.querySelector("#suggestedAnswer"),
   assistPromptTitle: document.querySelector("#assistPromptTitle"),
   eventBusStatus: document.querySelector("#eventBusStatus"),
@@ -221,6 +225,7 @@ function renderMeeting() {
   els.minutesMeetingType.textContent = meetingTypeLabel(meeting.meetingType);
   els.minutesPlatformLabel.textContent = meeting.platformLabel;
   els.latestQuestion.textContent = meeting.answerSuggestion?.triggerText || "No detected question yet.";
+  els.questionInput.value = meeting.answerSuggestion?.triggerText || "";
   els.suggestedAnswer.textContent = meeting.answerSuggestion?.suggestedAnswer || "No answer suggestion stored yet.";
   els.assistPromptTitle.textContent = state.meetingType === MeetingTypes.founderCustomer
     ? "Grounded founder answer"
@@ -378,6 +383,26 @@ Object.values(calendarProviders).forEach((provider) => {
       provider.setStatus("Disconnect failed", error.message || `Could not disconnect ${provider.name}.`);
     }
   });
+});
+
+els.answerAssistBtn.addEventListener("click", async () => {
+  if (!state.meeting) return;
+  els.answerAssistBtn.disabled = true;
+  els.suggestedAnswer.textContent = "Grounding answer in recent transcript, meeting metadata, participants, and private notes...";
+  try {
+    const answerSuggestion = buildAnswerSuggestion({
+      meeting: state.meeting,
+      question: els.questionInput.value,
+      notes: els.privateNotesInput.value
+    });
+    await localMeetingStore.putAnswerSuggestion(answerSuggestion);
+    state.meeting = await localMeetingStore.getMeetingBundle(state.meeting.id);
+    renderMeeting();
+  } catch (error) {
+    els.suggestedAnswer.textContent = error.message || "Could not generate answer suggestion.";
+  } finally {
+    els.answerAssistBtn.disabled = false;
+  }
 });
 
 function renderSimulatorControls() {
