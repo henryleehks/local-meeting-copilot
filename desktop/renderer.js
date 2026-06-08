@@ -30,10 +30,16 @@ const els = {
   meetingMeta: document.querySelector("#meetingMeta"),
   startAssistBtn: document.querySelector("#startAssistBtn"),
   captureStatus: document.querySelector("#captureStatus"),
+  liveMeetingTitle: document.querySelector("#liveMeetingTitle"),
+  livePlatformLabel: document.querySelector("#livePlatformLabel"),
+  liveCaptureLabel: document.querySelector("#liveCaptureLabel"),
   transcriptTimeline: document.querySelector("#transcriptTimeline"),
   latestQuestion: document.querySelector("#latestQuestion"),
   suggestedAnswer: document.querySelector("#suggestedAnswer"),
   assistPromptTitle: document.querySelector("#assistPromptTitle"),
+  minutesMeetingTitle: document.querySelector("#minutesMeetingTitle"),
+  minutesMeetingType: document.querySelector("#minutesMeetingType"),
+  minutesPlatformLabel: document.querySelector("#minutesPlatformLabel"),
   minutesContent: document.querySelector("#minutesContent"),
   runtimeVersion: document.querySelector("#runtimeVersion"),
   dbStatus: document.querySelector("#dbStatus"),
@@ -44,9 +50,13 @@ function confidenceLabel(confidence) {
   return confidence === SpeakerConfidence.medium ? "Medium confidence" : `${confidence[0].toUpperCase()}${confidence.slice(1)} confidence`;
 }
 
+function meetingTypeLabel(meetingType) {
+  return meetingType === MeetingTypes.founderCustomer ? "Founder/customer" : "Candidate prep/mock";
+}
+
 function renderMeta(meeting) {
   const rows = [
-    ["Meeting type", meeting.meetingType === MeetingTypes.founderCustomer ? "Founder/customer" : "Candidate prep/mock"],
+    ["Meeting type", meetingTypeLabel(meeting.meetingType)],
     ["Participants", meeting.participants.map((participant) => participant.displayName).join(", ")],
     ["Capture policy", "Start Live Assist required"],
     ["Audio retention", meeting.audioRetentionPolicy === "delete-after-processing" ? "Delete after processing" : "Keep for this meeting"]
@@ -68,16 +78,17 @@ function renderTranscript(meeting) {
     const validation = validateTranscriptEvent(event);
     const item = document.createElement("article");
     item.className = `timeline-item ${event.speakerConfidence}`;
+    const isUncertain = [SpeakerConfidence.medium, SpeakerConfidence.low].includes(event.speakerConfidence);
 
     const time = new Date(event.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     item.innerHTML = `
       <div class="event-meta">
-        <strong>${event.speakerName}</strong>
+        <strong>${event.speakerName}${isUncertain ? " ?" : ""}</strong>
         <span>${time}</span>
       </div>
       <p></p>
       <div class="event-badges">
-        <span>${confidenceLabel(event.speakerConfidence)}</span>
+        <span class="${isUncertain ? "uncertain" : ""}">${confidenceLabel(event.speakerConfidence)}</span>
         <span>${event.source}</span>
         <span>${event.sourceConfidence} source</span>
         ${validation.ok ? "" : `<span>${validation.error}</span>`}
@@ -159,6 +170,12 @@ function renderMeeting() {
   els.meetingTitle.textContent = meeting.title;
   els.platformBadge.textContent = meeting.platformLabel;
   els.meetingSummary.textContent = meeting.summary;
+  els.liveMeetingTitle.textContent = meeting.title;
+  els.livePlatformLabel.textContent = meeting.platformLabel;
+  els.liveCaptureLabel.textContent = els.captureStatus.textContent;
+  els.minutesMeetingTitle.textContent = `${meeting.title} minutes`;
+  els.minutesMeetingType.textContent = meetingTypeLabel(meeting.meetingType);
+  els.minutesPlatformLabel.textContent = meeting.platformLabel;
   els.latestQuestion.textContent = meeting.answerSuggestion?.triggerText || "No detected question yet.";
   els.suggestedAnswer.textContent = meeting.answerSuggestion?.suggestedAnswer || "No answer suggestion stored yet.";
   els.assistPromptTitle.textContent = state.meetingType === MeetingTypes.founderCustomer
@@ -190,6 +207,7 @@ els.typeToggles.forEach((item) => {
 
 els.startAssistBtn.addEventListener("click", () => {
   els.captureStatus.textContent = "Live";
+  els.liveCaptureLabel.textContent = "Live";
   setSection("live");
 });
 

@@ -86,6 +86,20 @@
                 </div>
                 <span id="captureStatus" class="badge">Idle</span>
               </div>
+              <div class="mode-summary">
+                <div>
+                  <span>Current meeting</span>
+                  <strong id="liveMeetingTitle">Customer discovery with Northstar CFO</strong>
+                </div>
+                <div>
+                  <span>Platform</span>
+                  <strong id="livePlatformLabel">Zoom</strong>
+                </div>
+                <div>
+                  <span>Capture status</span>
+                  <strong id="liveCaptureLabel">Idle</strong>
+                </div>
+              </div>
               <div id="transcriptTimeline" class="timeline"></div>
             </article>
 
@@ -104,11 +118,25 @@
             <div class="panel-head">
               <div>
                 <p class="eyebrow">Minutes Mode</p>
-                <h3>Draft minutes</h3>
+                <h3 id="minutesMeetingTitle">Draft minutes</h3>
               </div>
               <span class="badge">Editable draft</span>
             </div>
-            <div id="minutesContent" class="minutes-content"></div>
+            <div class="mode-summary compact-summary">
+              <div>
+                <span>Meeting type</span>
+                <strong id="minutesMeetingType">Founder/customer</strong>
+              </div>
+              <div>
+                <span>Platform</span>
+                <strong id="minutesPlatformLabel">Zoom</strong>
+              </div>
+              <div>
+                <span>Source</span>
+                <strong>Seed transcript events</strong>
+              </div>
+            </div>
+            <div id="minutesContent" class="minutes-content" contenteditable="true" aria-label="Editable meeting minutes draft"></div>
           </article>
         </section>
 

@@ -220,6 +220,38 @@ h4 {
   line-height: 1.55;
 }
 
+.mode-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.mode-summary div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.mode-summary span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mode-summary strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.compact-summary {
+  margin-bottom: 20px;
+}
+
 .meta-list {
   display: grid;
   grid-template-columns: 150px 1fr;
@@ -292,6 +324,11 @@ h4 {
   font-weight: 800;
 }
 
+.event-badges .uncertain {
+  color: #8a3f00;
+  background: #ffedd5;
+}
+
 .assist-panel {
   display: grid;
   align-content: start;
@@ -321,6 +358,12 @@ h4 {
 .minutes-content {
   display: grid;
   gap: 16px;
+  min-height: 360px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: #fff;
+  outline: none;
 }
 
 .minutes-block {
@@ -343,7 +386,8 @@ h4 {
 @media (max-width: 980px) {
   .desktop-shell,
   .section-grid,
-  .live-layout {
+  .live-layout,
+  .mode-summary {
     grid-template-columns: 1fr;
   }
 
