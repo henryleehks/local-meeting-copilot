@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Local Meeting Copilot</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <div>
+          <p class="eyebrow">Local copilot</p>
+          <h1>Meeting Desk</h1>
+        </div>
+
+        <label class="field">
+          <span>Meeting title</span>
+          <input id="meetingTitle" value="Interview prep call" />
+        </label>
+
+        <div class="speaker-panel">
+          <div class="panel-head compact">
+            <h3>Speakers</h3>
+            <button id="addSpeakerBtn" class="icon-btn" title="Add speaker">+</button>
+          </div>
+          <div id="speakerList" class="speaker-list"></div>
+          <label class="field">
+            <span>Speaking now</span>
+            <select id="activeSpeaker"></select>
+          </label>
+        </div>
+
+        <div class="control-group" aria-label="Audio source">
+          <button class="segmented active" data-source="mic">Mic</button>
+          <button class="segmented" data-source="screen">Screen audio</button>
+        </div>
+
+        <div class="record-panel">
+          <button id="recordBtn" class="record-btn">
+            <span class="record-dot"></span>
+            Start listening
+          </button>
+          <div class="status-row">
+            <span id="statusDot" class="status-dot"></span>
+            <span id="statusText">Idle</span>
+          </div>
+        </div>
+
+        <button id="downloadBtn" class="secondary">Download transcript</button>
+        <button id="clearBtn" class="ghost">Clear meeting</button>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Live transcript</p>
+            <h2 id="meetingHeading">Interview prep call</h2>
+          </div>
+          <div class="timer" id="timer">00:00</div>
+        </header>
+
+        <section class="meeting-grid">
+          <div class="transcript-panel">
+            <div class="panel-head">
+              <h3>Conversation</h3>
+              <button id="transcribeRecordingBtn" class="tiny">Diarize recording</button>
+            </div>
+            <div id="transcript" class="transcript" contenteditable="true" aria-label="Meeting transcript"></div>
+            <p id="interim" class="interim"></p>
+          </div>
+
+          <div class="assistant-panel">
+            <div class="panel-head">
+              <h3>Answer assist</h3>
+              <span id="modelBadge" class="badge">local + API</span>
+            </div>
+
+            <label class="field">
+              <span>Question heard</span>
+              <textarea id="questionInput" rows="4" placeholder="Paste or type the exact question, or leave blank to infer from the latest transcript."></textarea>
+            </label>
+
+            <button id="answerBtn" class="primary">What should I answer?</button>
+
+            <div class="answer-box">
+              <p class="answer-label">Suggested reply</p>
+              <div id="answerOutput">Your answer will appear here.</div>
+            </div>
+
+            <div class="notes">
+              <h4>Private notes</h4>
+              <textarea id="notesInput" rows="7" placeholder="Goals, facts you want remembered, constraints, names..."></textarea>
+            </div>
+
+            <div class="minutes-panel">
+              <div class="panel-head">
+                <h3>Meeting minutes</h3>
+                <button id="minutesBtn" class="tiny">Create minutes</button>
+              </div>
+              <div id="minutesOutput" class="minutes-output">End the meeting, then generate a summary, decisions, action items, and follow-up draft.</div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
