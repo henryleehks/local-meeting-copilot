@@ -331,6 +331,20 @@ h4 {
   font-size: 13px;
 }
 
+.event-row.selected {
+  border-color: var(--accent);
+  background: #ecfdf5;
+}
+
+.permission-help {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: #425466;
+  background: #fff7ed;
+  line-height: 1.55;
+}
+
 .timeline {
   display: grid;
   gap: 12px;

@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld("desktopApp", {
       return () => ipcRenderer.removeListener("extension-bridge:transcript-event", listener);
     }
   },
+  desktopCapture: {
+    detectWindows: () => ipcRenderer.invoke("desktop-capture:detect-windows")
+  },
   googleCalendar: {
     status: () => ipcRenderer.invoke("google-calendar:status"),
     connect: () => ipcRenderer.invoke("google-calendar:connect"),

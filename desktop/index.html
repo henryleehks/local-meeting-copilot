@@ -213,6 +213,21 @@
               <h3>Optional only</h3>
               <p>AI calls happen only when configured; the local shell and event contracts work without an API key.</p>
             </article>
+            <article class="panel wide">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Desktop Capture Agent</p>
+                  <h3>Meeting windows and permissions</h3>
+                </div>
+                <span id="desktopCaptureStatus" class="badge">Not checked</span>
+              </div>
+              <p id="desktopCaptureHelp">Refresh to detect candidate Zoom, Teams, and Meet/Chrome windows.</p>
+              <div class="button-row">
+                <button id="refreshDesktopWindowsBtn" class="secondary-action">Refresh desktop windows</button>
+                <button id="confirmDesktopCaptureBtn" class="primary">Confirm selected window</button>
+              </div>
+              <div id="desktopWindowList" class="event-list" aria-label="Desktop meeting windows"></div>
+            </article>
           </div>
         </section>
       </section>

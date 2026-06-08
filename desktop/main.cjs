@@ -3,6 +3,7 @@ const { join } = require("node:path");
 const { GoogleCalendarClient } = require("./google-calendar.cjs");
 const { MicrosoftCalendarClient } = require("./microsoft-calendar.cjs");
 const { ExtensionBridge } = require("./extension-bridge.cjs");
+const { DesktopCaptureAgent } = require("./desktop-capture-agent.cjs");
 
 let mainWindow;
 
@@ -31,6 +32,7 @@ function createWindow() {
 app.whenReady().then(() => {
   const googleCalendar = new GoogleCalendarClient(app, shell);
   const microsoftCalendar = new MicrosoftCalendarClient(app, shell);
+  const desktopCaptureAgent = new DesktopCaptureAgent();
   const extensionBridge = new ExtensionBridge({
     onTranscriptEvent: (event) => mainWindow?.webContents.send("extension-bridge:transcript-event", event),
     onConnection: (status) => mainWindow?.webContents.send("extension-bridge:status", status)
@@ -38,6 +40,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle("app:version", () => app.getVersion());
   ipcMain.handle("extension-bridge:status", () => ({ port: extensionBridge.port }));
+  ipcMain.handle("desktop-capture:detect-windows", () => desktopCaptureAgent.detectCandidateWindows());
   ipcMain.handle("google-calendar:status", () => googleCalendar.status());
   ipcMain.handle("google-calendar:connect", () => googleCalendar.connect());
   ipcMain.handle("google-calendar:disconnect", () => googleCalendar.disconnect());

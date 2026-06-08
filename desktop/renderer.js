@@ -72,6 +72,12 @@ const els = {
   runtimeVersion: document.querySelector("#runtimeVersion"),
   dbStatus: document.querySelector("#dbStatus"),
   audioPolicyLabel: document.querySelector("#audioPolicyLabel")
+  ,
+  desktopCaptureStatus: document.querySelector("#desktopCaptureStatus"),
+  desktopCaptureHelp: document.querySelector("#desktopCaptureHelp"),
+  refreshDesktopWindowsBtn: document.querySelector("#refreshDesktopWindowsBtn"),
+  confirmDesktopCaptureBtn: document.querySelector("#confirmDesktopCaptureBtn"),
+  desktopWindowList: document.querySelector("#desktopWindowList")
 };
 
 function confidenceLabel(confidence) {
@@ -396,6 +402,49 @@ Object.values(calendarProviders).forEach((provider) => {
       provider.setStatus("Disconnect failed", error.message || `Could not disconnect ${provider.name}.`);
     }
   });
+});
+
+let selectedDesktopWindow = null;
+
+function renderDesktopWindows(result) {
+  els.desktopCaptureStatus.textContent = result.ok ? "Ready" : "Needs permission";
+  els.desktopCaptureHelp.textContent = result.message;
+  els.desktopWindowList.textContent = "";
+  els.confirmDesktopCaptureBtn.disabled = true;
+
+  if (!result.windows.length) {
+    const help = document.createElement("div");
+    help.className = "permission-help";
+    help.textContent = result.permissionHelp?.join(" ");
+    els.desktopWindowList.append(help);
+    return;
+  }
+
+  result.windows.forEach((windowInfo) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "event-row";
+    row.innerHTML = `<strong></strong><span>${windowInfo.appName} · ${windowInfo.platformHint}</span>`;
+    row.querySelector("strong").textContent = windowInfo.title;
+    row.addEventListener("click", () => {
+      selectedDesktopWindow = windowInfo;
+      els.desktopCaptureStatus.textContent = "Window selected";
+      els.confirmDesktopCaptureBtn.disabled = false;
+      [...els.desktopWindowList.querySelectorAll(".event-row")].forEach((item) => item.classList.toggle("selected", item === row));
+    });
+    els.desktopWindowList.append(row);
+  });
+}
+
+els.refreshDesktopWindowsBtn.addEventListener("click", async () => {
+  els.desktopCaptureStatus.textContent = "Checking";
+  renderDesktopWindows(await window.desktopApp.desktopCapture.detectWindows());
+});
+
+els.confirmDesktopCaptureBtn.addEventListener("click", () => {
+  if (!selectedDesktopWindow) return;
+  els.desktopCaptureStatus.textContent = "Confirmed";
+  els.desktopCaptureHelp.textContent = `Selected ${selectedDesktopWindow.appName}: ${selectedDesktopWindow.title}. Capture still starts only after explicit user confirmation.`;
 });
 
 els.answerAssistBtn.addEventListener("click", async () => {
