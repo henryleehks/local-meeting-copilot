@@ -12,11 +12,11 @@ Build the local capture-event ingestion path before real integrations exist. A s
 
 ## Acceptance criteria
 
-- [ ] A local event bus or bridge accepts structured transcript events.
-- [ ] A simulator can emit events for Meet, Zoom, Teams, desktop accessibility, OCR, and audio diarization sources.
-- [ ] Incoming events are persisted and rendered live in Live Mode.
-- [ ] Speaker confidence and source confidence appear in the transcript UI.
-- [ ] This path has a documented event schema that browser and desktop capture implementations can use.
+- [x] A local event bus or bridge accepts structured transcript events.
+- [x] A simulator can emit events for Meet, Zoom, Teams, desktop accessibility, OCR, and audio diarization sources.
+- [x] Incoming events are persisted and rendered live in Live Mode.
+- [x] Speaker confidence and source confidence appear in the transcript UI.
+- [x] This path has a documented event schema that browser and desktop capture implementations can use.
 
 ## Blocked by
 
@@ -24,3 +24,5 @@ Build the local capture-event ingestion path before real integrations exist. A s
 - `.scratch/live-meeting-copilot/issues/02-persist-meetings-and-transcript-events-locally.md`
 
 ## Comments
+
+- Implemented `desktop/capture-event-bus.js`, `desktop/capture-simulator.js`, and `docs/CAPTURE_EVENT_SCHEMA.md`. Live Mode can now emit simulated transcript events for browser caption, desktop accessibility/OCR, and audio diarization sources; events are validated, persisted to IndexedDB, and rerendered in the live transcript timeline.

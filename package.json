@@ -9,7 +9,7 @@
     "desktop": "env -u ELECTRON_RUN_AS_NODE electron .",
     "prototype": "node server.js",
     "dev": "node server.js",
-    "check": "node --check desktop/main.cjs && node --check desktop/preload.cjs && node --check desktop/renderer.js && node --check desktop/seed-data.js && node --check desktop/storage.js && node --check src/contracts.js && node --check server.js"
+    "check": "node --check desktop/main.cjs && node --check desktop/preload.cjs && node --check desktop/capture-event-bus.js && node --check desktop/capture-simulator.js && node --check desktop/renderer.js && node --check desktop/seed-data.js && node --check desktop/storage.js && node --check src/contracts.js && node --check server.js"
   },
   "devDependencies": {
     "electron": "^42.3.3"

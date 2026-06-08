@@ -109,6 +109,18 @@
               <p id="latestQuestion" class="question"></p>
               <button class="primary">What should I answer?</button>
               <div id="suggestedAnswer" class="answer-preview"></div>
+
+              <div class="simulator-panel">
+                <div class="panel-head">
+                  <div>
+                    <p class="eyebrow">Capture simulator</p>
+                    <h3>Emit transcript event</h3>
+                  </div>
+                  <span id="eventBusStatus" class="badge">Bus ready</span>
+                </div>
+                <div id="simulatorControls" class="simulator-controls" aria-label="Simulated capture sources"></div>
+                <p id="simulatorStatus" class="simulator-status">Use these controls to test the local event bus before real capture adapters exist.</p>
+              </div>
             </article>
           </div>
         </section>

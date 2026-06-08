@@ -3,6 +3,8 @@ import {
   SpeakerConfidence,
   validateTranscriptEvent
 } from "../src/contracts.js";
+import { captureEventBus } from "./capture-event-bus.js";
+import { createSimulatedCaptureEvent, simulatorSources } from "./capture-simulator.js";
 import { localMeetingStore } from "./storage.js";
 
 const sectionTitles = {
@@ -37,6 +39,9 @@ const els = {
   latestQuestion: document.querySelector("#latestQuestion"),
   suggestedAnswer: document.querySelector("#suggestedAnswer"),
   assistPromptTitle: document.querySelector("#assistPromptTitle"),
+  eventBusStatus: document.querySelector("#eventBusStatus"),
+  simulatorControls: document.querySelector("#simulatorControls"),
+  simulatorStatus: document.querySelector("#simulatorStatus"),
   minutesMeetingTitle: document.querySelector("#minutesMeetingTitle"),
   minutesMeetingType: document.querySelector("#minutesMeetingType"),
   minutesPlatformLabel: document.querySelector("#minutesPlatformLabel"),
@@ -164,6 +169,16 @@ async function loadMeeting(meetingType = state.meetingType) {
   renderMeeting();
 }
 
+async function handleCaptureTranscriptEvent(event) {
+  if (!state.meeting || event.meetingId !== state.meeting.id) return;
+
+  await localMeetingStore.putTranscriptEvent(event);
+  state.meeting = await localMeetingStore.getMeetingBundle(state.meeting.id);
+  renderMeeting();
+  els.eventBusStatus.textContent = "Event persisted";
+  els.simulatorStatus.textContent = `Persisted ${event.source} event with ${event.speakerConfidence} speaker confidence and ${event.sourceConfidence} source confidence.`;
+}
+
 function renderMeeting() {
   const { meeting } = state;
   if (!meeting) return;
@@ -211,6 +226,34 @@ els.startAssistBtn.addEventListener("click", () => {
   setSection("live");
 });
 
+function renderSimulatorControls() {
+  els.simulatorControls.textContent = "";
+  simulatorSources.forEach(({ source, label }) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "simulator-button";
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      if (!state.meeting) return;
+      try {
+        const event = createSimulatedCaptureEvent(state.meeting, source);
+        captureEventBus.emitTranscriptEvent(event);
+      } catch (error) {
+        els.eventBusStatus.textContent = "Event rejected";
+        els.simulatorStatus.textContent = error.message || "Could not emit simulated event.";
+      }
+    });
+    els.simulatorControls.append(button);
+  });
+}
+
+captureEventBus.onTranscriptEvent((event) => {
+  handleCaptureTranscriptEvent(event).catch((error) => {
+    els.eventBusStatus.textContent = "Persist failed";
+    els.simulatorStatus.textContent = error.message || "Could not persist transcript event.";
+  });
+});
+
 window.desktopApp?.getVersion().then((version) => {
   els.runtimeVersion.textContent = `Electron app v${version}`;
 });
@@ -224,6 +267,7 @@ async function boot() {
   await localMeetingStore.init();
   state.settings = await localMeetingStore.getSetting("privacy-defaults");
   renderSettings();
+  renderSimulatorControls();
   await loadMeeting();
 }
 
