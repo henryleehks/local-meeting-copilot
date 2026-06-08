@@ -93,6 +93,8 @@ MICROSOFT_CLIENT_ID=your_client_id npm start
 5. Select `/Users/henry/local-meeting-copilot/browser-extension`.
 
 The extension detects Google Meet, Zoom Web, and Microsoft Teams Web URLs. On supported pages it injects a small test button that sends a structured transcript event to the desktop bridge at `http://127.0.0.1:47843`.
+
+On Google Meet pages, the extension also observes visible caption-like regions and sends `meet-browser-caption` transcript events when captions and speaker labels are visible. Meet does not expose a stable public caption DOM API, so this adapter is heuristic and degrades to medium-confidence speaker labels when the speaker cannot be directly read.
 - Record microphone audio or screen audio.
 - Live browser transcription where supported.
 - Name meeting participants and tag the live transcript with the current speaker.

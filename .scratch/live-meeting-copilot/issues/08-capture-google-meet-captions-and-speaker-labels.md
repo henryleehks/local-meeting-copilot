@@ -12,11 +12,11 @@ Add the first platform adapter for browser meetings: Google Meet. When captions 
 
 ## Acceptance criteria
 
-- [ ] Extension recognizes an active Google Meet tab.
-- [ ] Extension captures visible caption text.
-- [ ] Extension captures or infers the visible speaker label.
-- [ ] Captured events appear in Live Mode with source `meet-browser-caption`.
-- [ ] Speaker confidence is set according to whether the speaker label was directly captured or inferred.
+- [x] Extension recognizes an active Google Meet tab.
+- [x] Extension captures visible caption text.
+- [x] Extension captures or infers the visible speaker label.
+- [x] Captured events appear in Live Mode with source `meet-browser-caption`.
+- [x] Speaker confidence is set according to whether the speaker label was directly captured or inferred.
 
 ## Blocked by
 
@@ -24,3 +24,5 @@ Add the first platform adapter for browser meetings: Google Meet. When captions 
 - `.scratch/live-meeting-copilot/issues/05-connect-google-calendar-and-detect-meetings.md`
 
 ## Comments
+
+- Implemented the first Google Meet content-script adapter. It observes visible caption-like regions on `meet.google.com`, parses direct speaker labels from `Speaker: text` or label-plus-caption layouts, falls back to medium-confidence inferred speaker labels, emits `meet-browser-caption` events through the extension bridge, and dedupes repeated caption text. Verified the bridge accepts a Meet-caption-shaped event.
