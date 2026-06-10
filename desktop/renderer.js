@@ -13,7 +13,6 @@ import {
   normalizeGoogleCalendarEvent,
   normalizeMicrosoftCalendarEvent
 } from "../src/calendar-normalizer.js";
-import { buildAnswerSuggestion } from "../src/answer-assist.js";
 import { generateDraftMinutes } from "../src/minutes-generator.js";
 
 const sectionTitles = {
@@ -27,7 +26,8 @@ const state = {
   activeSection: "calendar",
   meetingType: MeetingTypes.founderCustomer,
   meeting: null,
-  settings: null
+  settings: null,
+  liveSessionActive: false
 };
 
 const els = {
@@ -71,6 +71,7 @@ const els = {
   minutesMeetingTitle: document.querySelector("#minutesMeetingTitle"),
   minutesMeetingType: document.querySelector("#minutesMeetingType"),
   minutesPlatformLabel: document.querySelector("#minutesPlatformLabel"),
+  minutesSourceLabel: document.querySelector("#minutesSourceLabel"),
   minutesContent: document.querySelector("#minutesContent"),
   runtimeVersion: document.querySelector("#runtimeVersion"),
   dbStatus: document.querySelector("#dbStatus"),
@@ -204,6 +205,8 @@ async function loadMeeting(meetingType = state.meetingType) {
   const meeting = await localMeetingStore.getMeetingBundleByType(meetingType);
   if (!meeting) throw new Error(`No local meeting found for type: ${meetingType}`);
   state.meeting = meeting;
+  state.liveSessionActive = false;
+  await window.desktopApp?.extensionBridge?.clearActiveSession();
   els.dbStatus.textContent = "IndexedDB ready; demo records loaded locally";
   renderMeeting();
 }
@@ -214,13 +217,15 @@ async function loadMeetingById(meetingId) {
   if (!meeting) throw new Error(`No local meeting found for id: ${meetingId}`);
   state.meeting = meeting;
   state.meetingType = meeting.meetingType;
+  state.liveSessionActive = false;
   els.typeToggles.forEach((toggle) => toggle.classList.toggle("active", toggle.dataset.meetingType === state.meetingType));
+  await window.desktopApp?.extensionBridge?.clearActiveSession();
   els.dbStatus.textContent = "Selected meeting loaded locally";
   renderMeeting();
 }
 
 async function handleCaptureTranscriptEvent(event) {
-  if (!state.meeting || event.meetingId !== state.meeting.id) return;
+  if (!state.liveSessionActive || !state.meeting || event.meetingId !== state.meeting.id) return;
 
   await localMeetingStore.putTranscriptEvent(event);
   state.meeting = await localMeetingStore.getMeetingBundle(state.meeting.id);
@@ -241,6 +246,9 @@ function renderMeeting() {
   els.minutesMeetingTitle.textContent = `${meeting.title} minutes`;
   els.minutesMeetingType.textContent = meetingTypeLabel(meeting.meetingType);
   els.minutesPlatformLabel.textContent = meeting.platformLabel;
+  els.minutesSourceLabel.textContent = meeting.transcriptEvents.length
+    ? `${meeting.transcriptEvents.length} local transcript event${meeting.transcriptEvents.length === 1 ? "" : "s"}`
+    : "No transcript events yet";
   els.latestQuestion.textContent = meeting.answerSuggestion?.triggerText || "No detected question yet.";
   els.questionInput.value = meeting.answerSuggestion?.triggerText || "";
   els.suggestedAnswer.textContent = meeting.answerSuggestion?.suggestedAnswer || "No answer suggestion stored yet.";
@@ -311,8 +319,19 @@ els.typeToggles.forEach((item) => {
 });
 
 els.startAssistBtn.addEventListener("click", () => {
+  if (!state.meeting) return;
   els.captureStatus.textContent = "Live";
   els.liveCaptureLabel.textContent = "Live";
+  state.liveSessionActive = true;
+  window.desktopApp?.extensionBridge?.setActiveSession({
+    meetingId: state.meeting.id,
+    meetingTitle: state.meeting.title,
+    platform: state.meeting.platform
+  }).then((result) => {
+    els.extensionBridgeStatus.textContent = `Extension bridge bound to ${result.activeSession.meetingTitle}.`;
+  }).catch((error) => {
+    els.extensionBridgeStatus.textContent = error.message || "Could not bind extension bridge to this meeting.";
+  });
   setSection("live");
 });
 
@@ -320,6 +339,8 @@ els.stopCaptureBtn.addEventListener("click", async () => {
   if (!state.meeting) return;
   els.captureStatus.textContent = "Stopped";
   els.liveCaptureLabel.textContent = "Stopped";
+  state.liveSessionActive = false;
+  await window.desktopApp?.extensionBridge?.clearActiveSession();
   const minutes = generateDraftMinutes(state.meeting);
   await localMeetingStore.putMeetingMinutes(minutes);
   state.meeting = await localMeetingStore.getMeetingBundle(state.meeting.id);
@@ -340,7 +361,10 @@ async function refreshCalendarStatus(provider) {
   provider.disconnectBtn.disabled = !status.connected;
 
   if (!status.configured) {
-    provider.setStatus("Not configured", provider.notConfigured);
+    const missing = status.missingConfiguration?.length
+      ? ` Missing: ${status.missingConfiguration.join(", ")}.`
+      : "";
+    provider.setStatus("Not configured", `${provider.notConfigured}${missing}`);
   } else if (status.connected) {
     provider.setStatus("Connected", provider.connected);
   } else {
@@ -518,7 +542,7 @@ els.answerAssistBtn.addEventListener("click", async () => {
   els.answerAssistBtn.disabled = true;
   els.suggestedAnswer.textContent = "Grounding answer in recent transcript, meeting metadata, participants, and private notes...";
   try {
-    const answerSuggestion = buildAnswerSuggestion({
+    const answerSuggestion = await window.desktopApp.answerService.generate({
       meeting: state.meeting,
       question: els.questionInput.value,
       notes: els.privateNotesInput.value
@@ -566,13 +590,15 @@ window.desktopApp?.getVersion().then((version) => {
 });
 
 window.desktopApp?.extensionBridge?.status().then((status) => {
-  els.extensionBridgeStatus.textContent = `Extension bridge listening at http://127.0.0.1:${status.port}.`;
+  els.extensionBridgeStatus.textContent = status.activeSession
+    ? `Extension bridge bound to ${status.activeSession.meetingTitle}.`
+    : `Extension bridge listening at http://127.0.0.1:${status.port}.`;
 });
 
 window.desktopApp?.extensionBridge?.onStatus((status) => {
-  els.extensionBridgeStatus.textContent = status.port
-    ? `Extension bridge listening at http://127.0.0.1:${status.port}.`
-    : "Chrome extension checked in with the desktop bridge.";
+  els.extensionBridgeStatus.textContent = status.activeSession
+    ? `Chrome extension checked in; active session is ${status.activeSession.meetingTitle}.`
+    : "Chrome extension checked in; no active Live Assist session yet.";
 });
 
 window.desktopApp?.extensionBridge?.onTranscriptEvent((event) => {

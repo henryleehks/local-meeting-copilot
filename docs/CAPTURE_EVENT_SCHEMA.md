@@ -43,3 +43,5 @@ This schema is the shared ingestion contract for simulated capture, the future C
 ## Ingestion Rule
 
 Capture producers must send valid Transcript Events to the local capture event bus. The desktop app validates the event, persists it locally, and updates Live Mode using the same rendered timeline as seeded transcript events.
+
+Browser extension producers must also match the active Live Assist session exposed by the desktop bridge. The bridge rejects browser transcript events when capture has not been started or when the event `meetingId` differs from the desktop app's active meeting.

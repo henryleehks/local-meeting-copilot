@@ -1,6 +1,6 @@
 const { createServer } = require("node:http");
 const { createHash, randomBytes } = require("node:crypto");
-const { readFile, unlink, writeFile } = require("node:fs/promises");
+const { chmod, readFile, unlink, writeFile } = require("node:fs/promises");
 const { join } = require("node:path");
 
 const GRAPH_CALENDAR_VIEW_URL = "https://graph.microsoft.com/v1.0/me/calendarView";
@@ -41,7 +41,9 @@ async function readToken(app) {
 }
 
 async function writeToken(app, token) {
-  await writeFile(tokenFilePath(app), JSON.stringify(token, null, 2));
+  const filePath = tokenFilePath(app);
+  await writeFile(filePath, JSON.stringify(token, null, 2), { mode: 0o600 });
+  await chmod(filePath, 0o600);
 }
 
 async function postTokenRequest(tokenUrl, body) {
@@ -122,7 +124,12 @@ class MicrosoftCalendarClient {
     return {
       configured: Boolean(config.clientId),
       connected: Boolean(token?.refresh_token || token?.access_token),
-      scopes: MICROSOFT_SCOPE.split(" ")
+      scopes: MICROSOFT_SCOPE.split(" "),
+      missingConfiguration: [
+        ...(!config.clientId ? ["MICROSOFT_CLIENT_ID"] : [])
+      ],
+      tenant: config.tenant,
+      tokenStore: "electron-userData/microsoft-calendar-token.json"
     };
   }
 

@@ -4,6 +4,8 @@ contextBridge.exposeInMainWorld("desktopApp", {
   getVersion: () => ipcRenderer.invoke("app:version"),
   extensionBridge: {
     status: () => ipcRenderer.invoke("extension-bridge:status"),
+    setActiveSession: (session) => ipcRenderer.invoke("extension-bridge:set-active-session", session),
+    clearActiveSession: () => ipcRenderer.invoke("extension-bridge:clear-active-session"),
     onStatus: (callback) => {
       const listener = (_event, status) => callback(status);
       ipcRenderer.on("extension-bridge:status", listener);
@@ -17,6 +19,10 @@ contextBridge.exposeInMainWorld("desktopApp", {
   },
   desktopCapture: {
     detectWindows: () => ipcRenderer.invoke("desktop-capture:detect-windows")
+  },
+  answerService: {
+    status: () => ipcRenderer.invoke("answer-service:status"),
+    generate: (payload) => ipcRenderer.invoke("answer-service:generate", payload)
   },
   googleCalendar: {
     status: () => ipcRenderer.invoke("google-calendar:status"),

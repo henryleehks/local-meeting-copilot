@@ -41,37 +41,65 @@ PORT=5175 npm run prototype
 
 ## Optional AI setup
 
-Live browser transcription works best in Chrome and does not require an API key. For AI answer suggestions and server-side audio transcription, start with:
+Live browser transcription works best in Chrome and does not require an API key. AI answer suggestions and server-side audio transcription only run when explicitly invoked and configured. Start with:
 
 ```bash
-OPENAI_API_KEY=your_key_here npm start
+cp .env.example .env
 ```
 
-Optional model overrides:
+Then fill in `.env`:
 
-```bash
-OPENAI_MODEL=gpt-5.4-mini OPENAI_TRANSCRIBE_MODEL=gpt-4o-transcribe-diarize npm start
+```env
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-5.4-mini
+OPENAI_TRANSCRIBE_MODEL=gpt-4o-transcribe-diarize
 ```
+
+The Electron app and prototype server load `.env` automatically. Variables passed directly in the shell still take precedence over `.env`.
 
 ## Optional Google Calendar Setup
 
 Google Calendar import uses an installed-app OAuth loopback flow in the Electron main process.
 
-```bash
-GOOGLE_CLIENT_ID=your_client_id GOOGLE_CLIENT_SECRET=your_client_secret npm start
+Add these values to `.env`. Without them, the desktop app still runs with local seed meetings.
+
+```env
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
 ```
 
-Without these variables, the desktop app still runs with local seed meetings.
+### Google OAuth app setup
+
+1. Open Google Cloud Console and create or select a project.
+2. Enable the Google Calendar API.
+3. Configure the OAuth consent screen for local testing.
+4. Create an OAuth client with application type `Desktop app`.
+5. Start the Electron app with `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+6. Click `Connect Google` in Calendar/Home. The app opens the browser consent screen and receives the code through a temporary `127.0.0.1` loopback callback.
+
+Tokens are stored locally in Electron `userData` as `google-calendar-token.json` with owner-only file permissions.
 
 ## Optional Microsoft Calendar Setup
 
 Microsoft Calendar import uses the Microsoft identity platform authorization code flow with PKCE and Microsoft Graph Calendar APIs.
 
-```bash
-MICROSOFT_CLIENT_ID=your_client_id npm start
+Add this value to `.env`. `MICROSOFT_TENANT_ID` is optional and defaults to `common`. Without `MICROSOFT_CLIENT_ID`, the desktop app still runs with local seed meetings.
+
+```env
+MICROSOFT_CLIENT_ID=your_client_id
+MICROSOFT_TENANT_ID=common
 ```
 
-`MICROSOFT_TENANT_ID` is optional and defaults to `common`. Without `MICROSOFT_CLIENT_ID`, the desktop app still runs with local seed meetings.
+### Microsoft OAuth app setup
+
+1. Open Microsoft Entra admin center and create an app registration.
+2. Add a mobile/native redirect URI. The app uses a temporary `http://127.0.0.1:<port>/oauth/microsoft/callback` loopback URI during local development.
+3. Allow public client flows for the app registration.
+4. Add delegated Microsoft Graph permissions for `User.Read` and `Calendars.Read`.
+5. Start the Electron app with `MICROSOFT_CLIENT_ID`. Set `MICROSOFT_TENANT_ID` only if you do not want the default `common` tenant.
+6. Click `Connect Microsoft` in Calendar/Home.
+
+Tokens are stored locally in Electron `userData` as `microsoft-calendar-token.json` with owner-only file permissions.
 
 ## Features
 
@@ -96,6 +124,8 @@ MICROSOFT_CLIENT_ID=your_client_id npm start
 The extension detects Google Meet, Zoom Web, and Microsoft Teams Web URLs. On supported pages it injects a small test button that sends a structured transcript event to the desktop bridge at `http://127.0.0.1:47843`.
 
 On Google Meet, Zoom Web, and Teams Web pages, the extension also observes visible caption-like regions and sends browser caption transcript events when captions and speaker labels are visible. These meeting platforms do not expose stable public caption DOM APIs, so these adapters are heuristic and degrade to medium-confidence speaker labels when the speaker cannot be directly read.
+
+For the end-to-end Google Meet demo, select or import a Meet event in the Electron app, click `Start Live Assist`, then open or refresh the Meet tab. The desktop app publishes the active meeting id to the local extension bridge; extension transcript events are rejected until there is an active Live Assist session and their `meetingId` matches that session.
 - Record microphone audio or screen audio.
 - Live browser transcription where supported.
 - Name meeting participants and tag the live transcript with the current speaker.

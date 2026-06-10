@@ -9,10 +9,6 @@ function detectMeetingPage() {
   return SUPPORTED_PATTERNS.find((pattern) => pattern.test(url)) || null;
 }
 
-function getMeetingId() {
-  return localStorage.getItem("liveMeetingCopilotMeetingId") || "meeting-founder-northstar";
-}
-
 function textFingerprint(text) {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -27,10 +23,14 @@ function isVisible(element) {
     && Number(style.opacity || 1) > 0;
 }
 
+function activeMeetingId() {
+  return overlayState.activeSession?.meetingId || "";
+}
+
 function createTestTranscriptEvent(detected) {
   return {
     id: `extension-test-${Date.now()}`,
-    meetingId: getMeetingId(),
+    meetingId: activeMeetingId(),
     timestamp: new Date().toISOString(),
     speakerName: "Browser extension",
     speakerConfidence: "medium",
@@ -43,7 +43,7 @@ function createTestTranscriptEvent(detected) {
 function createCaptionTranscriptEvent(detected, caption) {
   return {
     id: `extension-caption-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    meetingId: getMeetingId(),
+    meetingId: activeMeetingId(),
     timestamp: new Date().toISOString(),
     speakerName: caption.speakerName,
     speakerConfidence: caption.speakerConfidence,
@@ -55,15 +55,17 @@ function createCaptionTranscriptEvent(detected, caption) {
 
 const overlayState = {
   connected: false,
+  activeSession: null,
   latestQuestion: "No question detected yet.",
-  suggestedAnswer: "Click Answer for a short grounded response."
+  suggestedAnswer: "Start Live Assist in the desktop app to capture captions."
 };
 
 function parseCaptionText(rawText) {
   const lines = rawText
     .split(/\n+/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((line) => !/^(captions?|subtitles?|closed captions?|live transcript)$/i.test(line));
   const text = lines.join(" ");
   if (!text || text.length < 3) return null;
 
@@ -144,6 +146,7 @@ function installBrowserCaptionAdapter(detected) {
 
   function scanCaptions() {
     timer = null;
+    if (!activeMeetingId()) return;
     likelyCaptionElements(detected).forEach((element) => {
       const parsed = parseCaptionText(element.innerText || element.textContent || "");
       if (!parsed) return;
@@ -169,6 +172,7 @@ function installBrowserCaptionAdapter(detected) {
     timer = setTimeout(scanCaptions, 400);
   });
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  setInterval(scanCaptions, 1500);
   scanCaptions();
 }
 
@@ -191,6 +195,12 @@ function overlayStyles() {
 }
 
 function sendTestEvent(detected, button) {
+  if (!activeMeetingId()) {
+    overlayState.suggestedAnswer = "No active desktop session. Start Live Assist first.";
+    renderOverlay(detected);
+    if (button) button.disabled = false;
+    return;
+  }
   chrome.runtime.sendMessage({
     type: "TRANSCRIPT_EVENT",
     event: createTestTranscriptEvent(detected)
@@ -214,7 +224,11 @@ function renderOverlay(detected) {
   overlay.innerHTML = `
     <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">
       <strong>Live Copilot</strong>
-      <span>${overlayState.connected ? "Connected" : "Checking"}</span>
+      <span>${overlayState.activeSession ? "Live" : (overlayState.connected ? "Idle" : "Checking")}</span>
+    </div>
+    <div style="margin-bottom:8px;color:#cbd5e1;">
+      <strong style="display:block;color:#fff;">Desktop session</strong>
+      <span id="live-meeting-copilot-session"></span>
     </div>
     <div style="margin-bottom:8px;color:#cbd5e1;">
       <strong style="display:block;color:#fff;">Latest question</strong>
@@ -226,6 +240,9 @@ function renderOverlay(detected) {
       <span id="live-meeting-copilot-answer-text"></span>
     </div>
   `;
+  overlay.querySelector("#live-meeting-copilot-session").textContent = overlayState.activeSession
+    ? overlayState.activeSession.meetingTitle
+    : "Start Live Assist to bind this tab.";
   overlay.querySelector("#live-meeting-copilot-question").textContent = overlayState.latestQuestion;
   overlay.querySelector("#live-meeting-copilot-answer-text").textContent = overlayState.suggestedAnswer;
   overlay.querySelector("#live-meeting-copilot-answer").addEventListener("click", (event) => {
@@ -240,6 +257,7 @@ function renderOverlay(detected) {
 function ensureOverlay(detected) {
   chrome.runtime.sendMessage({ type: "BRIDGE_STATUS" }, (response) => {
     overlayState.connected = Boolean(response?.ok);
+    overlayState.activeSession = response?.status?.activeSession || null;
     renderOverlay(detected);
   });
 }
@@ -248,9 +266,16 @@ function boot() {
   const detected = detectMeetingPage();
   if (!detected) return;
 
-  chrome.runtime.sendMessage({ type: "BRIDGE_STATUS" }, () => {});
-  ensureOverlay(detected);
-  installBrowserCaptionAdapter(detected);
+  chrome.runtime.sendMessage({ type: "BRIDGE_STATUS" }, (response) => {
+    overlayState.connected = Boolean(response?.ok);
+    overlayState.activeSession = response?.status?.activeSession || null;
+    renderOverlay(detected);
+    installBrowserCaptionAdapter(detected);
+  });
+
+  if (!window.__liveMeetingCopilotStatusPoll) {
+    window.__liveMeetingCopilotStatusPoll = setInterval(() => ensureOverlay(detected), 2000);
+  }
 }
 
 chrome.runtime.onMessage.addListener((message) => {

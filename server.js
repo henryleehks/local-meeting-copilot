@@ -2,8 +2,12 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const require = createRequire(import.meta.url);
+require("./src/env-loader.cjs").loadEnvFile({ cwd: __dirname });
+
 const publicDir = join(__dirname, "public");
 const port = Number(process.env.PORT || 5174);
 const host = process.env.HOST || "127.0.0.1";

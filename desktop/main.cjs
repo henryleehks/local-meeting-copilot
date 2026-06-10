@@ -1,11 +1,15 @@
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const { join } = require("node:path");
+const { loadEnvFile } = require("../src/env-loader.cjs");
 const { GoogleCalendarClient } = require("./google-calendar.cjs");
 const { MicrosoftCalendarClient } = require("./microsoft-calendar.cjs");
 const { ExtensionBridge } = require("./extension-bridge.cjs");
 const { DesktopCaptureAgent } = require("./desktop-capture-agent.cjs");
+const { AnswerService } = require("./answer-service.cjs");
 
 let mainWindow;
+
+loadEnvFile();
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -33,14 +37,19 @@ app.whenReady().then(() => {
   const googleCalendar = new GoogleCalendarClient(app, shell);
   const microsoftCalendar = new MicrosoftCalendarClient(app, shell);
   const desktopCaptureAgent = new DesktopCaptureAgent();
+  const answerService = new AnswerService();
   const extensionBridge = new ExtensionBridge({
     onTranscriptEvent: (event) => mainWindow?.webContents.send("extension-bridge:transcript-event", event),
     onConnection: (status) => mainWindow?.webContents.send("extension-bridge:status", status)
   });
 
   ipcMain.handle("app:version", () => app.getVersion());
-  ipcMain.handle("extension-bridge:status", () => ({ port: extensionBridge.port }));
+  ipcMain.handle("extension-bridge:status", () => extensionBridge.statusPayload());
+  ipcMain.handle("extension-bridge:set-active-session", (_event, session) => extensionBridge.setActiveSession(session));
+  ipcMain.handle("extension-bridge:clear-active-session", () => extensionBridge.clearActiveSession());
   ipcMain.handle("desktop-capture:detect-windows", () => desktopCaptureAgent.detectCandidateWindows());
+  ipcMain.handle("answer-service:status", () => answerService.status());
+  ipcMain.handle("answer-service:generate", (_event, payload) => answerService.generateAnswer(payload));
   ipcMain.handle("google-calendar:status", () => googleCalendar.status());
   ipcMain.handle("google-calendar:connect", () => googleCalendar.connect());
   ipcMain.handle("google-calendar:disconnect", () => googleCalendar.disconnect());
@@ -59,7 +68,7 @@ app.whenReady().then(() => {
 
   createWindow();
   extensionBridge.start()
-    .then((port) => mainWindow?.webContents.send("extension-bridge:status", { connected: true, port }))
+    .then(() => mainWindow?.webContents.send("extension-bridge:status", extensionBridge.statusPayload()))
     .catch((error) => console.error(`Extension bridge failed: ${error.message}`));
 
   app.on("activate", () => {

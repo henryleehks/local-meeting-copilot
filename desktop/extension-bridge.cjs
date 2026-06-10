@@ -34,6 +34,33 @@ class ExtensionBridge {
     this.onTranscriptEvent = onTranscriptEvent;
     this.onConnection = onConnection;
     this.server = null;
+    this.activeSession = null;
+  }
+
+  setActiveSession(session = {}) {
+    if (!session.meetingId) throw new Error("Active extension session requires a meetingId.");
+    this.activeSession = {
+      meetingId: session.meetingId,
+      meetingTitle: session.meetingTitle || "Untitled meeting",
+      platform: session.platform || "unknown",
+      startedAt: new Date().toISOString()
+    };
+    return { ok: true, activeSession: this.activeSession };
+  }
+
+  clearActiveSession() {
+    const previous = this.activeSession;
+    this.activeSession = null;
+    return { ok: true, previous };
+  }
+
+  statusPayload() {
+    return {
+      ok: true,
+      bridge: "live-meeting-copilot",
+      port: this.port,
+      activeSession: this.activeSession
+    };
   }
 
   start() {
@@ -43,11 +70,17 @@ class ExtensionBridge {
       try {
         if (req.method === "OPTIONS") return sendJson(res, 204, {});
         if (req.method === "GET" && req.url === "/status") {
-          this.onConnection?.({ connected: true, at: new Date().toISOString() });
-          return sendJson(res, 200, { ok: true, bridge: "live-meeting-copilot", port: this.port });
+          this.onConnection?.({ connected: true, at: new Date().toISOString(), activeSession: this.activeSession });
+          return sendJson(res, 200, this.statusPayload());
         }
         if (req.method === "POST" && req.url === "/transcript-event") {
           const event = await readJson(req);
+          if (!this.activeSession) {
+            return sendJson(res, 409, { ok: false, error: "No active Live Assist session. Start Live Assist in the desktop app first." });
+          }
+          if (event.meetingId !== this.activeSession.meetingId) {
+            return sendJson(res, 409, { ok: false, error: "Transcript event meetingId does not match the active Live Assist session." });
+          }
           this.onTranscriptEvent?.(event);
           return sendJson(res, 202, { ok: true });
         }

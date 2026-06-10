@@ -1,6 +1,6 @@
 const { createServer } = require("node:http");
 const { randomBytes } = require("node:crypto");
-const { readFile, unlink, writeFile } = require("node:fs/promises");
+const { chmod, readFile, unlink, writeFile } = require("node:fs/promises");
 const { join } = require("node:path");
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -28,7 +28,9 @@ async function readToken(app) {
 }
 
 async function writeToken(app, token) {
-  await writeFile(tokenFilePath(app), JSON.stringify(token, null, 2));
+  const filePath = tokenFilePath(app);
+  await writeFile(filePath, JSON.stringify(token, null, 2), { mode: 0o600 });
+  await chmod(filePath, 0o600);
 }
 
 async function postTokenRequest(body) {
@@ -108,7 +110,12 @@ class GoogleCalendarClient {
     return {
       configured: Boolean(config.clientId && config.clientSecret),
       connected: Boolean(token?.refresh_token || token?.access_token),
-      scopes: [GOOGLE_SCOPE]
+      scopes: [GOOGLE_SCOPE],
+      missingConfiguration: [
+        ...(!config.clientId ? ["GOOGLE_CLIENT_ID"] : []),
+        ...(!config.clientSecret ? ["GOOGLE_CLIENT_SECRET"] : [])
+      ],
+      tokenStore: "electron-userData/google-calendar-token.json"
     };
   }
 
