@@ -30,7 +30,7 @@ function createWindow() {
     if (event.level >= 2) console.error(`Renderer: ${event.message}`);
   });
 
-  mainWindow.loadFile(join(__dirname, "index.html"));
+  mainWindow.loadFile(join(__dirname, "dist", "index.html"));
 }
 
 app.whenReady().then(() => {
