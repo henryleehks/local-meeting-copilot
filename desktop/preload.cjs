@@ -24,6 +24,10 @@ contextBridge.exposeInMainWorld("desktopApp", {
     status: () => ipcRenderer.invoke("answer-service:status"),
     generate: (payload) => ipcRenderer.invoke("answer-service:generate", payload)
   },
+  audioTranscription: {
+    status: () => ipcRenderer.invoke("audio-transcription:status"),
+    transcribeChunk: (payload) => ipcRenderer.invoke("audio-transcription:transcribe-chunk", payload)
+  },
   googleCalendar: {
     status: () => ipcRenderer.invoke("google-calendar:status"),
     connect: () => ipcRenderer.invoke("google-calendar:connect"),

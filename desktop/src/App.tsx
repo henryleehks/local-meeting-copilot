@@ -61,6 +61,17 @@ const providerSeed = {
   }
 };
 
+const audioChunkMs = 12000;
+
+function preferredAudioMimeType() {
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/ogg;codecs=opus"
+  ];
+  return candidates.find((candidate) => window.MediaRecorder?.isTypeSupported(candidate)) || "";
+}
+
 function Button({ variant = "secondary", className, ...props }: any) {
   return (
     <button
@@ -153,6 +164,11 @@ export function App() {
   const [audioFallbackStatus, setAudioFallbackStatus] = useState("Fallback audio is off.");
   const meetingRef = useRef<any>(null);
   const liveSessionActiveRef = useRef(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const transcriptionQueueRef = useRef(Promise.resolve());
+  const audioChunkIndexRef = useRef(0);
+  const stopAudioCaptureRef = useRef<(() => void) | null>(null);
 
   const aiStatus = useMemo(() => suggestedAnswer && !suggestedAnswer.startsWith("No answer") ? "Ready" : "Optional", [suggestedAnswer]);
   const latestQuestion = meeting?.answerSuggestion?.triggerText || "No detected question yet.";
@@ -262,6 +278,7 @@ export function App() {
     if (!meeting) return;
     setCaptureStatus("Live");
     setLiveSessionActive(true);
+    await startAudioCapture();
     try {
       const result = await window.desktopApp?.extensionBridge?.setActiveSession({
         meetingId: meeting.id,
@@ -278,6 +295,7 @@ export function App() {
   async function stopCaptureAndDraftMinutes() {
     if (!meeting) return;
     setCaptureStatus("Stopped");
+    stopAudioCapture();
     setLiveSessionActive(false);
     await window.desktopApp?.extensionBridge?.clearActiveSession();
     const draft = generateDraftMinutes(meeting);
@@ -293,6 +311,109 @@ export function App() {
     setMeeting(await localMeetingStore.getMeetingBundle(currentMeeting.id));
     setEventBusStatus("Event persisted");
     setSimulatorStatus(`Persisted ${event.source} event with ${event.speakerConfidence} speaker confidence and ${event.sourceConfidence} source confidence.`);
+  }
+
+  async function startAudioCapture() {
+    stopAudioCapture();
+    audioChunkIndexRef.current = 0;
+
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      setAudioFallbackStatus("This Electron runtime cannot record microphone audio.");
+      return;
+    }
+
+    setAudioFallbackStatus("Requesting microphone access...");
+    let transcriptionConfigured = false;
+    try {
+      const status = await window.desktopApp?.audioTranscription?.status();
+      transcriptionConfigured = Boolean(status?.configured);
+    } catch {
+      transcriptionConfigured = false;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: false
+      });
+      const mimeType = preferredAudioMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      audioStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+      stopAudioCaptureRef.current = () => stream.getTracks().forEach((track) => track.stop());
+
+      recorder.addEventListener("dataavailable", (event) => {
+        if (event.data.size > 0) enqueueAudioChunk(event.data, transcriptionConfigured);
+      });
+      recorder.addEventListener("stop", () => {
+        stream.getTracks().forEach((track) => track.stop());
+      });
+      recorder.start(audioChunkMs);
+      setSystemAudioFallback(true);
+      setAudioFallbackStatus(transcriptionConfigured
+        ? "Microphone capture is live; audio chunks are being transcribed into the local timeline."
+        : "Microphone capture is live. Set OPENAI_API_KEY to transcribe captured audio chunks.");
+    } catch (error: any) {
+      setAudioFallbackStatus(error?.message || "Microphone capture could not start.");
+    }
+  }
+
+  function stopAudioCapture() {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") recorder.stop();
+    stopAudioCaptureRef.current?.();
+    mediaRecorderRef.current = null;
+    audioStreamRef.current = null;
+    stopAudioCaptureRef.current = null;
+    setAudioFallbackStatus((current) => current.startsWith("Microphone capture")
+      ? "Microphone capture stopped."
+      : current);
+  }
+
+  function enqueueAudioChunk(blob: Blob, transcriptionConfigured: boolean) {
+    if (!transcriptionConfigured) return;
+    const chunkNumber = audioChunkIndexRef.current + 1;
+    audioChunkIndexRef.current = chunkNumber;
+    transcriptionQueueRef.current = transcriptionQueueRef.current
+      .then(() => transcribeAudioChunk(blob, chunkNumber))
+      .catch((error: any) => {
+        setAudioFallbackStatus(error?.message || "Audio transcription failed.");
+      });
+  }
+
+  async function transcribeAudioChunk(blob: Blob, chunkNumber: number) {
+    const currentMeeting = meetingRef.current;
+    if (!currentMeeting) return;
+
+    setAudioFallbackStatus(`Transcribing microphone chunk ${chunkNumber}...`);
+    const audio = Array.from(new Uint8Array(await blob.arrayBuffer()));
+    const speakerNames = currentMeeting.participants
+      .map((participant: any) => participant.displayName)
+      .filter(Boolean);
+    const result = await window.desktopApp.audioTranscription.transcribeChunk({
+      audio,
+      mimeType: blob.type || mediaRecorderRef.current?.mimeType || "audio/webm",
+      speakerNames
+    });
+    const text = (result.text || result.rawText || "").trim();
+    if (!text) {
+      setAudioFallbackStatus(`Microphone chunk ${chunkNumber} contained no transcribable speech.`);
+      return;
+    }
+
+    captureEventBus.emitTranscriptEvent(createTranscriptEvent({
+      id: `audio-capture-${Date.now()}-${chunkNumber}`,
+      meetingId: currentMeeting.id,
+      timestamp: new Date().toISOString(),
+      speakerName: "Captured audio",
+      speakerConfidence: SpeakerConfidence.low,
+      text,
+      source: TranscriptSources.audioDiarization,
+      sourceConfidence: SourceConfidence.medium
+    }));
+    setAudioFallbackStatus(keepAudio
+      ? `Microphone chunk ${chunkNumber} transcribed; audio is retained for this meeting.`
+      : `Microphone chunk ${chunkNumber} transcribed; raw audio was discarded after processing.`);
   }
 
   async function generateAnswer() {
@@ -355,25 +476,18 @@ export function App() {
 
   function processAudioFallback() {
     if (!meeting || !systemAudioFallback) {
-      setAudioFallbackStatus("Enable fallback system audio before processing.");
+      setAudioFallbackStatus("Start Live Assist to enable microphone capture first.");
       return;
     }
 
-    const mappedParticipant = meeting.participants.find((participant: any) => participant.role !== "user" && participant.role !== "candidate");
-    captureEventBus.emitTranscriptEvent(createTranscriptEvent({
-      id: `audio-diarization-${Date.now()}`,
-      meetingId: meeting.id,
-      timestamp: new Date().toISOString(),
-      speakerName: mappedParticipant ? `${mappedParticipant.displayName}?` : "Speaker 2",
-      speakerId: mappedParticipant?.id,
-      speakerConfidence: mappedParticipant ? SpeakerConfidence.medium : SpeakerConfidence.low,
-      text: "Diarized fallback transcript generated from system audio after caption and OCR paths were unavailable.",
-      source: TranscriptSources.audioDiarization,
-      sourceConfidence: SourceConfidence.low
-    }));
-    setAudioFallbackStatus(keepAudio
-      ? "Fallback transcript merged. Audio marked to keep for this meeting."
-      : "Fallback transcript merged. Captured audio deleted after processing by default.");
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state === "recording") {
+      recorder.requestData();
+      setAudioFallbackStatus("Queued the current microphone buffer for transcription.");
+      return;
+    }
+
+    setAudioFallbackStatus("No active microphone buffer is available to process.");
   }
 
   useEffect(() => {
@@ -418,6 +532,7 @@ export function App() {
     });
 
     return () => {
+      stopAudioCapture();
       offStatus?.();
       offExtension?.();
       offBus?.();
@@ -819,13 +934,13 @@ function SettingsView({ providers, connectProvider, disconnectProvider, syncCale
         <p className="mt-3 text-sm leading-6 text-zinc-400">Audio is fallback data and should be deleted by default unless a meeting explicitly opts in to keeping it.</p>
         <label className="mt-5 flex gap-3 text-sm text-zinc-300">
           <input type="checkbox" checked={systemAudioFallback} onChange={(event) => setSystemAudioFallback(event.target.checked)} />
-          Enable fallback system audio for this session
+          Enable microphone audio capture for this session
         </label>
         <label className="mt-3 flex gap-3 text-sm text-zinc-300">
           <input type="checkbox" checked={keepAudio} onChange={(event) => setKeepAudio(event.target.checked)} />
           Keep audio for this meeting instead of deleting after processing
         </label>
-        <Button className="mt-4" onClick={processAudioFallback}>Process diarized fallback</Button>
+        <Button className="mt-4" onClick={processAudioFallback}>Process current microphone buffer</Button>
         <p className="mt-3 text-sm text-zinc-500">{audioFallbackStatus}</p>
       </Panel>
 

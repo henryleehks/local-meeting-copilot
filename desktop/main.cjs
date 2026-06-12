@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, session, shell } = require("electron");
 const { join } = require("node:path");
 const { loadEnvFile } = require("../src/env-loader.cjs");
 const { GoogleCalendarClient } = require("./google-calendar.cjs");
@@ -6,6 +6,7 @@ const { MicrosoftCalendarClient } = require("./microsoft-calendar.cjs");
 const { ExtensionBridge } = require("./extension-bridge.cjs");
 const { DesktopCaptureAgent } = require("./desktop-capture-agent.cjs");
 const { AnswerService } = require("./answer-service.cjs");
+const { AudioTranscriptionService } = require("./audio-transcription-service.cjs");
 
 let mainWindow;
 
@@ -38,9 +39,15 @@ app.whenReady().then(() => {
   const microsoftCalendar = new MicrosoftCalendarClient(app, shell);
   const desktopCaptureAgent = new DesktopCaptureAgent();
   const answerService = new AnswerService();
+  const audioTranscriptionService = new AudioTranscriptionService();
   const extensionBridge = new ExtensionBridge({
     onTranscriptEvent: (event) => mainWindow?.webContents.send("extension-bridge:transcript-event", event),
     onConnection: (status) => mainWindow?.webContents.send("extension-bridge:status", status)
+  });
+
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    const isMainWindow = webContents === mainWindow?.webContents;
+    callback(isMainWindow && permission === "media");
   });
 
   ipcMain.handle("app:version", () => app.getVersion());
@@ -50,6 +57,8 @@ app.whenReady().then(() => {
   ipcMain.handle("desktop-capture:detect-windows", () => desktopCaptureAgent.detectCandidateWindows());
   ipcMain.handle("answer-service:status", () => answerService.status());
   ipcMain.handle("answer-service:generate", (_event, payload) => answerService.generateAnswer(payload));
+  ipcMain.handle("audio-transcription:status", () => audioTranscriptionService.status());
+  ipcMain.handle("audio-transcription:transcribe-chunk", (_event, payload) => audioTranscriptionService.transcribeChunk(payload));
   ipcMain.handle("google-calendar:status", () => googleCalendar.status());
   ipcMain.handle("google-calendar:connect", () => googleCalendar.connect());
   ipcMain.handle("google-calendar:disconnect", () => googleCalendar.disconnect());
