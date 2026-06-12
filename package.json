@@ -10,9 +10,10 @@
     "dev:renderer": "vite --config desktop/vite.config.ts",
     "build:renderer": "vite build --config desktop/vite.config.ts",
     "typecheck": "tsc --noEmit -p desktop/tsconfig.json",
+    "test": "node src/calendar-normalizer.test.mjs",
     "prototype": "node server.js",
     "dev": "node server.js",
-    "check": "npm run typecheck && node --check desktop/main.cjs && node --check desktop/preload.cjs && node --check desktop/answer-service.cjs && node --check desktop/desktop-capture-agent.cjs && node --check desktop/extension-bridge.cjs && node --check desktop/google-calendar.cjs && node --check desktop/microsoft-calendar.cjs && node --check desktop/capture-event-bus.js && node --check desktop/capture-simulator.js && node --check desktop/seed-data.js && node --check desktop/storage.js && node --check browser-extension/background.js && node --check browser-extension/content-script.js && node --check src/env-loader.cjs && node --check src/calendar-normalizer.js && node --check src/contracts.js && node --check src/meeting-url-parser.js && node --check src/minutes-generator.js && node --check server.js"
+    "check": "npm run typecheck && npm test && node --check desktop/main.cjs && node --check desktop/preload.cjs && node --check desktop/answer-service.cjs && node --check desktop/desktop-capture-agent.cjs && node --check desktop/extension-bridge.cjs && node --check desktop/google-calendar.cjs && node --check desktop/microsoft-calendar.cjs && node --check desktop/capture-event-bus.js && node --check desktop/capture-simulator.js && node --check desktop/seed-data.js && node --check desktop/storage.js && node --check browser-extension/background.js && node --check browser-extension/content-script.js && node --check src/env-loader.cjs && node --check src/calendar-normalizer.js && node --check src/contracts.js && node --check src/meeting-url-parser.js && node --check src/minutes-generator.js && node --check server.js"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",

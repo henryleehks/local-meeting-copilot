@@ -18,11 +18,16 @@ function participantRole(attendee) {
   return "attendee";
 }
 
-export function normalizeGoogleCalendarEvent(event) {
+function calendarMeetingId(source, eventId, meetingType) {
+  return `${source}-${meetingType}-${eventId}`;
+}
+
+export function normalizeGoogleCalendarEvent(event, { meetingType = MeetingTypes.founderCustomer } = {}) {
   const joinUrl = extractGoogleCalendarMeetingUrl(event);
   const platform = detectMeetingPlatform(joinUrl);
+  const meetingId = calendarMeetingId("google", event.id, meetingType);
   const participants = (event.attendees || []).map((attendee, index) => ({
-    id: `google-${event.id}-participant-${index}`,
+    id: `${meetingId}-participant-${index}`,
     displayName: attendee.displayName || attendee.email || `Attendee ${index + 1}`,
     email: attendee.email,
     calendarSource: "google",
@@ -30,9 +35,9 @@ export function normalizeGoogleCalendarEvent(event) {
   }));
 
   return {
-    id: `google-${event.id}`,
+    id: meetingId,
     title: event.summary || "Untitled Google Calendar event",
-    meetingType: MeetingTypes.founderCustomer,
+    meetingType,
     platform,
     platformLabel: platformLabel(platform),
     calendarEventId: event.id,
@@ -60,15 +65,16 @@ function microsoftParticipantRole(attendee) {
   return "attendee";
 }
 
-export function normalizeMicrosoftCalendarEvent(event) {
+export function normalizeMicrosoftCalendarEvent(event, { meetingType = MeetingTypes.founderCustomer } = {}) {
   const joinUrl = extractMicrosoftCalendarMeetingUrl(event);
   const platform = detectMeetingPlatform(joinUrl);
+  const meetingId = calendarMeetingId("microsoft", event.id, meetingType);
   const attendees = event.attendees || [];
   const organizer = event.organizer?.emailAddress ? [event.organizer] : [];
   const participants = [...organizer, ...attendees].map((person, index) => {
     const emailAddress = person.emailAddress || {};
     return {
-      id: `microsoft-${event.id}-participant-${index}`,
+      id: `${meetingId}-participant-${index}`,
       displayName: emailAddress.name || emailAddress.address || `Attendee ${index + 1}`,
       email: emailAddress.address,
       calendarSource: "microsoft",
@@ -77,9 +83,9 @@ export function normalizeMicrosoftCalendarEvent(event) {
   });
 
   return {
-    id: `microsoft-${event.id}`,
+    id: meetingId,
     title: event.subject || "Untitled Microsoft Calendar event",
-    meetingType: MeetingTypes.founderCustomer,
+    meetingType,
     platform,
     platformLabel: platformLabel(platform),
     calendarEventId: event.id,

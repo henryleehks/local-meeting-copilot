@@ -218,7 +218,9 @@ export function App() {
     const api = getProviderApi(providerId);
     setProviders((current: any) => ({ ...current, [providerId]: { ...current[providerId], status: "Syncing", detail: `Reading ${provider.name} events...`, busy: true } }));
     const events = await api.fetchUpcomingEvents();
-    const meetings = events.map(provider.normalize).filter((item: any) => item.joinUrl);
+    const meetings = events
+      .map((event: any) => provider.normalize(event, { meetingType }))
+      .filter((item: any) => item.joinUrl);
     const saved = [];
     for (const item of meetings) saved.push(await localMeetingStore.putMeetingBundle(item));
     setProviders((current: any) => ({

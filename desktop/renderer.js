@@ -397,7 +397,7 @@ async function syncCalendar(provider) {
   provider.setStatus("Syncing", `Reading ${provider.name} events...`);
   const events = await provider.api().fetchUpcomingEvents();
   const meetings = events
-    .map(provider.normalize)
+    .map((event) => provider.normalize(event, { meetingType: state.meetingType }))
     .filter((meeting) => meeting.joinUrl);
 
   const saved = [];
