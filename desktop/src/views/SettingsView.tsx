@@ -44,7 +44,7 @@ export function SettingsView({ providers, connectProvider, disconnectProvider, s
       <Panel>
         <Eyebrow>Privacy</Eyebrow>
         <h2 className="text-2xl font-semibold">{audioPolicyLabel}</h2>
-        <p className="mt-3 text-sm leading-6 text-zinc-400">Audio is fallback data and should be deleted by default unless a meeting explicitly opts in to keeping it.</p>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">Audio is optional fallback data. The Windows browser E2E path can pass through the Chrome extension without microphone transcription.</p>
         <label className="mt-5 flex gap-3 text-sm text-zinc-300">
           <input type="checkbox" checked={systemAudioFallback} onChange={(event) => setSystemAudioFallback(event.target.checked)} />
           Enable microphone audio capture for this session
@@ -67,7 +67,7 @@ export function SettingsView({ providers, connectProvider, disconnectProvider, s
           <Badge tone={desktopCapture.status === "Confirmed" ? "live" : "neutral"}>{desktopCapture.status}</Badge>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={refreshDesktopWindows}><Laptop className="size-4" />Refresh desktop windows</Button>
+          <Button onClick={refreshDesktopWindows}><Laptop className="size-4" />Check capture path</Button>
           <Button variant="primary" onClick={confirmDesktopWindow} disabled={!desktopCapture.selected}>Confirm selected window</Button>
           <Button onClick={() => emitDesktopCaption(TranscriptSources.desktopAccessibility)} disabled={desktopCapture.status !== "Confirmed"}>Emit accessibility caption</Button>
           <Button onClick={() => emitDesktopCaption(TranscriptSources.desktopOcr)} disabled={desktopCapture.status !== "Confirmed"}>Emit OCR fallback</Button>

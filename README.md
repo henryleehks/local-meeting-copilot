@@ -22,6 +22,30 @@ npm start
 
 V1 starts with an Electron desktop shell because the desktop app is the main product surface for Calendar/Home, Live Mode, Minutes Mode, Settings/Privacy, local storage, AI orchestration, and the future capture bridge. The Chrome extension needs this receiving app and shared event contract before browser capture events have somewhere useful to go.
 
+On Windows, run the same commands from PowerShell after changing into your local clone:
+
+```powershell
+npm install
+npm start
+```
+
+The launcher is cross-platform and clears Electron's `ELECTRON_RUN_AS_NODE` environment flag without relying on Unix `env`.
+
+## Windows Browser E2E Checklist
+
+Use this path when macOS Accessibility, Screen Recording, or microphone permissions block testing. Native Windows desktop capture for Zoom and Teams app windows is intentionally deferred in this slice; the supported Windows E2E path is Chrome plus the local extension bridge.
+
+1. In PowerShell, run `npm install`, then `npm start`.
+2. In the Electron app, choose or keep a Google Meet seed meeting and click `Start Live Assist`.
+3. Open Chrome to `chrome://extensions`, enable Developer mode, click `Load unpacked`, and select the repo's `browser-extension` folder.
+4. Open or refresh a Google Meet tab. The extension overlay should show the active desktop session after the app has started Live Assist.
+5. Use the extension overlay button to send a test transcript event, or enable Meet captions and speak/read a short question.
+6. Confirm the transcript event appears in the Electron Live Mode supporting context.
+7. Click `What should I answer?`. This works with the local fallback even when `OPENAI_API_KEY` is not set.
+8. Click `Stop and draft minutes`, then confirm Minutes Mode includes the captured transcript context.
+
+Microphone transcription is optional for this Windows E2E pass. It requires Windows microphone permission and `OPENAI_API_KEY`; the required pass condition is the browser extension transcript event reaching Live Mode.
+
 ## Run The Prototype-Only Localhost App
 
 The original localhost browser app is still available as a prototype for microphone/screen recording, browser speech recognition, answer suggestions, and minutes generation.

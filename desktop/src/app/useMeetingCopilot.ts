@@ -34,7 +34,7 @@ export function useMeetingCopilot() {
   });
   const [desktopCapture, setDesktopCapture] = useState<any>({
     status: "Not checked",
-    help: "Refresh to detect candidate Zoom, Teams, and Meet/Chrome windows.",
+    help: "Refresh to check native desktop capture or browser-extension E2E guidance for this platform.",
     windows: [],
     selected: null
   });
@@ -319,10 +319,12 @@ export function useMeetingCopilot() {
     setDesktopCapture((current: any) => ({ ...current, status: "Checking" }));
     const result = await window.desktopApp.desktopCapture.detectWindows();
     setDesktopCapture({
-      status: result.ok ? "Ready" : "Needs permission",
+      status: result.statusLabel || (result.ok ? "Ready" : "Needs permission"),
       help: result.message,
       windows: result.windows || [],
       permissionHelp: result.permissionHelp,
+      platform: result.platform,
+      supported: result.supported,
       selected: null
     });
   }

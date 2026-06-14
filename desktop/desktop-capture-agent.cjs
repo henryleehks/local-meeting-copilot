@@ -39,14 +39,8 @@ function inferPlatform(text) {
 
 class DesktopCaptureAgent {
   async detectCandidateWindows() {
-    if (process.platform !== "darwin") {
-      return {
-        ok: false,
-        windows: [],
-        message: "Desktop meeting window detection is macOS-first in this slice.",
-        permissionHelp: this.permissionHelp()
-      };
-    }
+    if (process.platform === "win32") return this.windowsBrowserE2eStatus();
+    if (process.platform !== "darwin") return this.unsupportedPlatformStatus();
 
     const script = `
       tell application "System Events"
@@ -65,10 +59,21 @@ class DesktopCaptureAgent {
     try {
       const windows = parseWindowLines(await runOsaScript(script))
         .filter((window) => MEETING_APPS.some((needle) => `${window.appName} ${window.title}`.toLowerCase().includes(needle)));
-      return { ok: true, windows, message: `${windows.length} candidate desktop meeting window(s) found.`, permissionHelp: this.permissionHelp() };
+      return {
+        ok: true,
+        supported: true,
+        platform: process.platform,
+        statusLabel: "Ready",
+        windows,
+        message: `${windows.length} candidate desktop meeting window(s) found.`,
+        permissionHelp: this.permissionHelp()
+      };
     } catch (error) {
       return {
         ok: false,
+        supported: true,
+        platform: process.platform,
+        statusLabel: "Needs permission",
         windows: [],
         message: "Could not read desktop windows. Grant Accessibility permission to the terminal/Electron app and try again.",
         error: error.message,
@@ -84,6 +89,39 @@ class DesktopCaptureAgent {
       "Grant Screen Recording permission before OCR or screen capture slices.",
       "Return here and refresh desktop windows."
     ];
+  }
+
+  windowsBrowserE2eStatus() {
+    return {
+      ok: false,
+      supported: false,
+      platform: "win32",
+      statusLabel: "Browser E2E ready",
+      windows: [],
+      message: "Windows browser testing is supported through Chrome plus the Live Meeting Copilot extension. Native Zoom/Teams desktop window detection is deferred for this slice.",
+      permissionHelp: [
+        "Use PowerShell to run npm start.",
+        "Load the browser-extension folder in Chrome at chrome://extensions.",
+        "Open Google Meet in Chrome, start Live Assist in the desktop app, then use the extension overlay to send a test transcript event.",
+        "Microphone transcription is optional and requires Windows microphone permission plus OPENAI_API_KEY."
+      ]
+    };
+  }
+
+  unsupportedPlatformStatus() {
+    return {
+      ok: false,
+      supported: false,
+      platform: process.platform,
+      statusLabel: "Browser E2E only",
+      windows: [],
+      message: "Native desktop meeting window detection is not implemented for this platform. Use the Chrome extension browser-meeting path for end-to-end testing.",
+      permissionHelp: [
+        "Start the Electron desktop app.",
+        "Load the browser-extension folder in Chrome.",
+        "Open a supported browser meeting and start Live Assist before sending transcript events."
+      ]
+    };
   }
 }
 

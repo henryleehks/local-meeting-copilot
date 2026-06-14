@@ -34,8 +34,8 @@ export function HomeView({ meeting, providers, captureStatus, dbStatus, aiStatus
         </div>
         <div className="mt-10 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatusTile icon={Lock} label="Storage" value={dbStatus} />
-          <StatusTile icon={Radar} label="Capture" value="User-confirmed only" />
-          <StatusTile icon={AudioLines} label="Audio" value="Delete after processing" />
+          <StatusTile icon={Radar} label="Capture" value="Chrome extension + manual start" />
+          <StatusTile icon={AudioLines} label="Audio" value="Optional microphone fallback" />
           <StatusTile icon={WandSparkles} label="AI" value={aiStatus} />
         </div>
       </Panel>
